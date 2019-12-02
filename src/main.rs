@@ -16,7 +16,7 @@ pub fn true_fuel_cost(n: f64) -> f64 {
 
 pub fn main() -> std::io::Result<()> {
     let f = fs::read_to_string("input/day02.txt")?;
-    let mut instructions: Vec<i32> = f
+    let input_state: Vec<i32> = f
         .trim()
         .split(",")
         .map(|e| {
@@ -34,10 +34,25 @@ pub fn main() -> std::io::Result<()> {
      * with the value 12 and replace position 2 with the value 2. What value is left at
      * position 0 after the program halts?
      */
+    let mut instructions = input_state.clone();
+    println!("sum {}", input_state.iter().fold(0, |a, e| a + e));
     instructions[1] = 12;
     instructions[2] = 2;
     let final_state = run_program(instructions);
-    println!("{}", final_state[0]);
+    println!("part 1: {}", final_state[0]);
+    // part 2
+    let target = 19690720;
+    for noun in 0..=99 {
+        for verb in 0..=99 {
+            let mut part2 = input_state.clone();
+            part2[1] = noun;
+            part2[2] = verb;
+            let attempt = run_program(part2);
+            if attempt[0] == target {
+                println!("part2 100 * {} + {} = {}", noun, verb, 100 * noun + verb);
+            }
+        }
+    }
     Ok(())
 }
 
