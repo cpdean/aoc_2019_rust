@@ -22,7 +22,8 @@ fn main() -> std::io::Result<()> {
     let mut total = 0.0;
     let mut true_total = 0.0;
     for line in reader.lines() {
-        let n: f64 = line?.parse().unwrap();
+        let l = line?;
+        let n: f64 = l.parse()?;
         total += fuel_cost(n);
         true_total += true_fuel_cost(n);
     }
