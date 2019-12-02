@@ -1,6 +1,4 @@
-use std::fs::File;
-use std::io::BufRead;
-use std::io::BufReader;
+use std::fs;
 
 //type Result<T> = ::std::result::Result<T, dyn std::error::Error>;
 
@@ -17,18 +15,95 @@ pub fn true_fuel_cost(n: f64) -> f64 {
 }
 
 pub fn main() -> std::io::Result<()> {
-    let f = File::open("input/day01.txt")?;
-    let reader = BufReader::new(f);
-    let mut total = 0.0;
-    let mut true_total = 0.0;
-    for line in reader.lines() {
-        let n: f64 = line?.parse().unwrap();
-        total += fuel_cost(n);
-        true_total += true_fuel_cost(n);
-    }
-    print!("{}\n", total);
-    print!("{}\n", true_total);
+    let f = fs::read_to_string("input/day02.txt")?;
+    let mut instructions: Vec<i32> = f
+        .trim()
+        .split(",")
+        .map(|e| {
+            let i: i32 = match e.parse() {
+                Ok(x) => x,
+                Err(error) => panic!("what is this <{}>", error),
+            };
+            i
+        })
+        .collect();
+    /* prompt:
+     * Once you have a working computer, the first step is to restore the gravity assist
+     * program (your puzzle input) to the "1202 program alarm" state it had just before the
+     * last computer caught fire. To do this, before running the program, replace position 1
+     * with the value 12 and replace position 2 with the value 2. What value is left at
+     * position 0 after the program halts?
+     */
+    instructions[1] = 12;
+    instructions[2] = 2;
+    let final_state = run_program(instructions);
+    println!("{}", final_state[0]);
     Ok(())
+}
+
+fn wrap_pos(try_pos: usize, length: usize) -> usize {
+    if try_pos > length {
+        try_pos - length
+    } else {
+        try_pos
+    }
+}
+
+pub fn step_forward(position: usize, mut program: Vec<i32>) -> (usize, Vec<i32>) {
+    let instruction = program[position];
+    let new_state = match instruction {
+        1 => {
+            let arg1 = wrap_pos(position + 1, program.len() - 1);
+            let arg2 = wrap_pos(position + 2, program.len() - 1);
+            let arg3 = wrap_pos(position + 3, program.len() - 1);
+            let (left_pos, right_pos, destination_pos) = (
+                program[arg1] as usize,
+                program[arg2] as usize,
+                program[arg3] as usize,
+            );
+            let (left, right) = (program[left_pos], program[right_pos]);
+            program[destination_pos] = left + right;
+            program
+        }
+        2 => {
+            let arg1 = wrap_pos(position + 1, program.len() - 1);
+            let arg2 = wrap_pos(position + 2, program.len() - 1);
+            let arg3 = wrap_pos(position + 3, program.len() - 1);
+            let (left_pos, right_pos, destination_pos) = (
+                program[arg1] as usize,
+                program[arg2] as usize,
+                program[arg3] as usize,
+            );
+            let (left, right) = (program[left_pos], program[right_pos]);
+            program[destination_pos] = left * right;
+            program
+        }
+        99 => {
+            println!("got a stop");
+            program
+        }
+        x => {
+            panic!("got a {}", x);
+        }
+    };
+    (wrap_pos(position + 4, new_state.len()), new_state)
+}
+
+pub fn run_program(mut program: Vec<i32>) -> Vec<i32> {
+    let counter = 0;
+    let mut position = 0;
+    loop {
+        let peek_instr = program[position as usize];
+        if peek_instr == 99 {
+            return program;
+        } else if counter > 1000 {
+            panic!("infinite loop?");
+        } else {
+            let (i, s) = step_forward(position, program);
+            position = i;
+            program = s;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -37,21 +112,35 @@ mod tests {
 
     #[test]
     fn it_works() {
-        assert_eq!(2.0, fuel_cost(13.0));
-        assert_eq!(654.0, fuel_cost(1969.0));
-        assert_eq!(33583.0, fuel_cost(100756.0));
+        let program = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
+        let position = 0;
+        let (next_position, next_program) = step_forward(position, program);
+        assert_eq!(next_position, 4);
+        assert_eq!(
+            next_program,
+            vec![1, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
+        );
     }
 
     #[test]
-    fn test_true_fuel() {
-        /*
-                 *
-            A module of mass 14 requires 2 fuel. This fuel requires no further fuel (2 divided by 3 and rounded down is 0, which would call for a negative fuel), so the total fuel required is still just 2.
-            At first, a module of mass 1969 requires 654 fuel. Then, this fuel requires 216 more fuel (654 / 3 - 2). 216 then requires 70 more fuel, which requires 21 fuel, which requires 5 fuel, which requires no further fuel. So, the total fuel required for a module of mass 1969 is 654 + 216 + 70 + 21 + 5 = 966.
-            The fuel required by a module of mass 100756 and its fuel is: 33583 + 11192 + 3728 + 1240 + 411 + 135 + 43 + 12 + 2 = 50346.
-        */
-        assert_eq!(2_f64, true_fuel_cost(14_f64));
-        assert_eq!(966_f64, true_fuel_cost(1969_f64));
-        assert_eq!(50346_f64, true_fuel_cost(100756_f64));
+    fn step_2() {
+        let program = vec![1, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50];
+        let position = 4;
+        let (next_position, next_program) = step_forward(position, program);
+        assert_eq!(next_position, 8);
+        assert_eq!(
+            next_program,
+            vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
+        );
+    }
+
+    #[test]
+    fn test_run() {
+        let program = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
+        let next_program = run_program(program);
+        assert_eq!(
+            next_program,
+            vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
+        );
     }
 }
