@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs;
 
 //type Result<T> = ::std::result::Result<T, dyn std::error::Error>;
@@ -12,7 +13,36 @@ pub enum Path {
 
 pub fn main() -> std::io::Result<()> {
     let f = fs::read_to_string("input/day03.txt")?;
-    let input_state: Vec<&str> = f.trim().split("\n").collect();
+    let input_state: Vec<Vec<(i32, i32)>> = f
+        .trim()
+        .split("\n")
+        .map(to_wire)
+        .map(wire_to_trail)
+        .collect();
+    let a = &input_state[0];
+    let b = &input_state[1];
+    let mut a_set = HashSet::new();
+    let mut b_set = HashSet::new();
+    for _a in a {
+        a_set.insert(_a);
+    }
+
+    for _b in b {
+        b_set.insert(_b);
+    }
+    let intersection = a_set.intersection(&b_set);
+    let mut min = 100000;
+    for i in intersection {
+        if **i == (0, 0) {
+            continue;
+        }
+        let (x, y) = i;
+        let distance = x.abs() + y.abs();
+        if min > distance {
+            min = distance;
+        }
+    }
+    dbg!(min);
     Ok(())
 }
 
@@ -82,7 +112,6 @@ mod tests {
 
     #[test]
     fn test_generate_trail() {
-        use Path::*;
         let line = "R2,U5";
 
         assert_eq!(
