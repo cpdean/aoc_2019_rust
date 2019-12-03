@@ -33,11 +33,36 @@ pub fn to_wire(line: &str) -> Vec<Path> {
         .collect()
 }
 
+fn produce_line(source: (i32, i32), path_instruction: Path) -> Vec<(i32, i32)> {
+    use Path::*;
+    let (direction_vector, distance) = match path_instruction {
+        Up(d) => ((0, 1), d),
+        Right(d) => ((1, 0), d),
+        Down(d) => ((0, -1), d),
+        Left(d) => ((-1, 0), d),
+    };
+
+    let mut cursor_position = source;
+    let mut line = vec![];
+    for _ in 0..distance {
+        let (x1, y1) = cursor_position;
+        let next_step = (x1 + direction_vector.0, y1 + direction_vector.1);
+        line.push(next_step);
+        cursor_position = next_step;
+    }
+    line
+}
+
 /// From a list of Path instructions, produces a list of coordinates
 /// that denote all the points travelled if you follow the Path instructions
 pub fn wire_to_trail(path: Vec<Path>) -> Vec<(i32, i32)> {
     // wires always start at origin
-    let trail = vec![(0, 0)];
+    let mut trail = vec![(0, 0)];
+    for p in path {
+        let source = trail[trail.len() - 1];
+        let line = produce_line(source, p);
+        trail.extend(line);
+    }
     trail
 }
 
@@ -53,5 +78,25 @@ mod tests {
         assert_eq!("2,U5", line.get(1..).unwrap());
 
         assert_eq!(vec![Right(2), Up(5)], to_wire(line));
+    }
+
+    #[test]
+    fn test_generate_trail() {
+        use Path::*;
+        let line = "R2,U5";
+
+        assert_eq!(
+            vec![
+                (0, 0),
+                (1, 0),
+                (2, 0),
+                (2, 1),
+                (2, 2),
+                (2, 3),
+                (2, 4),
+                (2, 5)
+            ],
+            wire_to_trail(to_wire(line))
+        );
     }
 }
