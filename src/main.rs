@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 
 //type Result<T> = ::std::result::Result<T, dyn std::error::Error>;
@@ -13,27 +13,36 @@ pub enum Path {
 
 pub fn main() -> std::io::Result<()> {
     let f = fs::read_to_string("input/day03.txt")?;
-    let input_state: Vec<Vec<(i32, i32)>> = f
+    let input_state: Vec<Vec<((i32, i32), i32)>> = f
         .trim()
         .split("\n")
         .map(to_wire)
         .map(wire_to_trail)
+        .map(|trail| {
+            let mut trail_with_distance = vec![];
+            let mut distance = 0;
+            for t in trail {
+                trail_with_distance.push((t, distance));
+                distance += 1;
+            }
+            trail_with_distance
+        })
         .collect();
     let a = &input_state[0];
     let b = &input_state[1];
     let mut a_set = HashSet::new();
     let mut b_set = HashSet::new();
     for _a in a {
-        a_set.insert(_a);
+        a_set.insert(_a.0);
     }
 
     for _b in b {
-        b_set.insert(_b);
+        b_set.insert(_b.0);
     }
-    let intersection = a_set.intersection(&b_set);
+    let intersection = a_set.intersection(&b_set).clone();
     let mut min = 100000;
-    for i in intersection {
-        if **i == (0, 0) {
+    for i in intersection.clone() {
+        if *i == (0, 0) {
             continue;
         }
         let (x, y) = i;
@@ -43,6 +52,40 @@ pub fn main() -> std::io::Result<()> {
         }
     }
     dbg!(min);
+    let mut a_set_step = HashMap::new();
+    let mut b_set_step = HashMap::new();
+    for _a in a {
+        if a_set_step.contains_key(&_a.0) {
+            continue;
+        }
+        a_set_step.insert(_a.0, _a.1);
+    }
+
+    for _b in b {
+        if b_set_step.contains_key(&_b.0) {
+            continue;
+        }
+        b_set_step.insert(_b.0, _b.1);
+    }
+
+    let mut step_min = 1000000000;
+    for i in intersection {
+        let a_step = a_set_step.get(i).unwrap();
+        let b_step = b_set_step.get(i).unwrap();
+        if a_step + b_step == 0 {
+            continue;
+        }
+        step_min = if step_min > a_step + b_step {
+            dbg!((a_step + b_step));
+            a_step + b_step
+        } else {
+            step_min
+        };
+    }
+    dbg!(step_min);
+
+    // minimize steps to the intersection, and then find the intersection with the lowest sum of
+    // steps
     Ok(())
 }
 
