@@ -80,18 +80,18 @@ mod tests {
 
     #[test]
     fn it_works() {
-        //assert_eq!(true, is_valid_pt_1(122345));
-        //assert_eq!(false, is_valid_pt_1(122340));
+        assert_eq!(true, is_valid_pt_1(122345));
+        assert_eq!(false, is_valid_pt_1(122340));
     }
 
     #[test]
     fn it_works_pt2() {
-        //assert_eq!(true, is_valid_pt_2(122345));
-        //assert_eq!(false, is_valid_pt_2(122340));
-        //assert_eq!(false, is_valid_pt_2(222345));
-        //assert_eq!(true, is_valid_pt_2(222335));
-        //assert_eq!(false, is_valid_pt_2(111111));
-        //assert_eq!(false, is_valid_pt_2(111110));
+        assert_eq!(true, is_valid_pt_2(122345));
+        assert_eq!(false, is_valid_pt_2(122340));
+        assert_eq!(false, is_valid_pt_2(222345));
+        assert_eq!(true, is_valid_pt_2(222335));
+        assert_eq!(false, is_valid_pt_2(111111));
+        assert_eq!(false, is_valid_pt_2(111110));
         assert_eq!(true, is_valid_pt_2(111122));
     }
 }
