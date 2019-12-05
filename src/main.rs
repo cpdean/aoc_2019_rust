@@ -33,7 +33,7 @@ pub fn parse_opcode(instruction: i32) -> Opcode {
         2 => InstructionClass::Mult,
         9 => InstructionClass::Halt, // should be 99 but oh well
         x => {
-            panic!("got a {}", x);
+            panic!("got a {:?}", x);
         }
     };
     match inst_class {
@@ -128,7 +128,6 @@ fn wrap_pos(try_pos: usize, length: usize) -> usize {
         try_pos
     }
 }
-
 fn get_val(position: usize, _mode: ParameterMode, program: &Vec<i32>) -> i32 {
     let a = wrap_pos(position, program.len() - 1);
     match _mode {
@@ -137,41 +136,59 @@ fn get_val(position: usize, _mode: ParameterMode, program: &Vec<i32>) -> i32 {
     }
 }
 
-pub fn step_forward(position: usize, mut program: Vec<i32>) -> (usize, Vec<i32>) {
-    let instruction = program[position];
-    let new_state = match instruction {
-        1 => {
+pub fn step_forward(
+    position: usize,
+    mut program: Vec<i32>,
+    stdin_stdout: &mut Vec<i32>,
+) -> (usize, Vec<i32>) {
+    use Opcode::*;
+    let instruction = parse_opcode(program[position]);
+    let (new_pos, new_state) = match instruction {
+        Add(arg1, arg2, arg3) => {
             let (left, right, destination_pos) = (
                 get_val(position + 1, ParameterMode::Position, &program),
                 get_val(position + 2, ParameterMode::Position, &program),
                 get_val(position + 3, ParameterMode::Immediate, &program) as usize,
             );
             program[destination_pos] = left + right;
-            program
+            (position + 4, program)
         }
-        2 => {
+        Mult(arg1, arg2, arg3) => {
             let (left, right, destination_pos) = (
                 get_val(position + 1, ParameterMode::Position, &program),
                 get_val(position + 2, ParameterMode::Position, &program),
                 get_val(position + 3, ParameterMode::Immediate, &program) as usize,
             );
             program[destination_pos] = left * right;
-            program
+            (position + 4, program)
         }
-        99 => {
+        TakeInput => {
+            let the_data = stdin_stdout[0];
+            let address = wrap_pos(position + 1, program.len() - 1);
+            program[address] = the_data;
+            (position + 2, program)
+        }
+        ReturnInput => {
+            let address = wrap_pos(position + 1, program.len() - 1);
+            let the_data = program[address];
+            stdin_stdout[0] = the_data;
+            (position + 2, program)
+        }
+        Halt => {
             println!("got a stop");
-            program
+            (position + 4, program)
         }
         x => {
-            panic!("got a {}", x);
+            panic!("got a {:?}", x);
         }
     };
-    (wrap_pos(position + 4, new_state.len()), new_state)
+    (wrap_pos(new_pos, new_state.len()), new_state)
 }
 
 pub fn run_program(mut program: Vec<i32>) -> Vec<i32> {
     let counter = 0;
     let mut position = 0;
+    let mut stdin_stdout = vec![1];
     loop {
         let peek_instr = program[position as usize];
         if peek_instr == 99 {
@@ -179,7 +196,7 @@ pub fn run_program(mut program: Vec<i32>) -> Vec<i32> {
         } else if counter > 1000 {
             panic!("infinite loop?");
         } else {
-            let (i, s) = step_forward(position, program);
+            let (i, s) = step_forward(position, program, &mut stdin_stdout);
             position = i;
             program = s;
         }
@@ -194,7 +211,7 @@ mod tests {
     fn it_works() {
         let program = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
         let position = 0;
-        let (next_position, next_program) = step_forward(position, program);
+        let (next_position, next_program) = step_forward(position, program, &mut vec![0]);
         assert_eq!(next_position, 4);
         assert_eq!(
             next_program,
@@ -206,7 +223,7 @@ mod tests {
     fn step_2() {
         let program = vec![1, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50];
         let position = 4;
-        let (next_position, next_program) = step_forward(position, program);
+        let (next_position, next_program) = step_forward(position, program, &mut vec![0]);
         assert_eq!(next_position, 8);
         assert_eq!(
             next_program,
