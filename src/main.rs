@@ -21,7 +21,7 @@ pub fn main() -> std::io::Result<()> {
 pub fn is_valid_pt_1(n: i32) -> bool {
     let s = n.to_string();
     // has at least one double
-    let characters: Vec<i32> = s.chars().map(|e| e.to_string().parse().unwrap()).collect();
+    let characters: Vec<char> = s.chars().collect();
     let mut has_double = false;
     for i in 0..characters.len() - 1 {
         let (a, b) = (characters[i], characters[i + 1]);
@@ -44,7 +44,7 @@ pub fn is_valid_pt_1(n: i32) -> bool {
 pub fn is_valid_pt_2(n: i32) -> bool {
     let s = n.to_string();
     // has at least one double
-    let characters: Vec<i32> = s.chars().map(|e| e.to_string().parse().unwrap()).collect();
+    let characters: Vec<char> = s.chars().collect();
     let mut has_double = false;
     let mut previous_digit = characters[0];
     let mut count_of_matching = 1;
