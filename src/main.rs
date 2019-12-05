@@ -14,6 +14,10 @@ pub enum Opcode {
     Add(ParameterMode, ParameterMode, ParameterMode),
     TakeInput,
     ReturnInput,
+    JumpIfTrue(ParameterMode, ParameterMode),
+    JumpIfFalse(ParameterMode, ParameterMode),
+    LessThan(ParameterMode, ParameterMode, ParameterMode),
+    Equals(ParameterMode, ParameterMode, ParameterMode),
     Halt,
 }
 
@@ -22,6 +26,10 @@ pub enum InstructionClass {
     Add,
     TakeInput,
     ReturnInput,
+    JumpIfTrue,
+    JumpIfFalse,
+    LessThan,
+    Equals,
     Halt,
 }
 
@@ -33,6 +41,10 @@ pub fn parse_opcode(instruction: i32) -> Opcode {
         2 => InstructionClass::Mult,
         3 => InstructionClass::TakeInput,
         4 => InstructionClass::ReturnInput,
+        5 => InstructionClass::JumpIfTrue,
+        6 => InstructionClass::JumpIfFalse,
+        7 => InstructionClass::LessThan,
+        8 => InstructionClass::Equals,
         9 => InstructionClass::Halt, // should be 99 but oh well
         x => {
             panic!("got a {:?}, from {:?}", x, instruction);
@@ -78,6 +90,68 @@ pub fn parse_opcode(instruction: i32) -> Opcode {
         InstructionClass::Halt => Halt, // should be 99 but oh well
         InstructionClass::TakeInput => TakeInput,
         InstructionClass::ReturnInput => ReturnInput,
+        InstructionClass::JumpIfTrue => {
+            let first_param = if instruction / 100 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            let second_param = if instruction / 1000 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            JumpIfTrue(first_param, second_param)
+        }
+        InstructionClass::JumpIfFalse => {
+            let first_param = if instruction / 100 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            let second_param = if instruction / 1000 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            JumpIfFalse(first_param, second_param)
+        }
+        InstructionClass::LessThan => {
+            let first_param = if instruction / 100 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            let second_param = if instruction / 1000 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            let third_param = if instruction / 10000 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            LessThan(first_param, second_param, third_param)
+        }
+        InstructionClass::Equals => {
+            let first_param = if instruction / 100 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            let second_param = if instruction / 1000 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            let third_param = if instruction / 10000 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            Equals(first_param, second_param, third_param)
+        }
     }
 }
 
@@ -103,6 +177,10 @@ pub fn main() -> std::io::Result<()> {
      */
     let instructions = input_state.clone();
     let mut stdin_stdout = vec![1];
+    let _final_state = run_program(instructions, &mut stdin_stdout);
+    dbg!(stdin_stdout);
+    let instructions = input_state.clone();
+    let mut stdin_stdout = vec![5];
     let _final_state = run_program(instructions, &mut stdin_stdout);
     dbg!(stdin_stdout);
     /*
@@ -146,18 +224,12 @@ pub fn step_forward(
     let instruction = parse_opcode(program[position]);
     let (new_pos, new_state) = match instruction {
         Add(arg1, arg2, _arg3) => {
-            dbg!(&arg1);
-            dbg!(&arg2);
-            dbg!(&_arg3);
             let (left, right, destination_pos) = (
                 get_val(position + 1, arg1, &program),
                 get_val(position + 2, arg2, &program),
                 get_val(position + 3, ParameterMode::Immediate, &program) as usize,
             );
-            dbg!(&left);
-            dbg!(&right);
             program[destination_pos] = left + right;
-            dbg!(program[destination_pos]);
             (position + 4, program)
         }
         Mult(arg1, arg2, _arg3) => {
@@ -171,12 +243,8 @@ pub fn step_forward(
         }
         TakeInput => {
             let the_data = stdin_stdout[0];
-            dbg!(the_data);
             let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
-            dbg!(address);
-            dbg!(program[address]);
             program[address] = the_data;
-            dbg!(program[address]);
             (position + 2, program)
         }
         ReturnInput => {
@@ -184,6 +252,54 @@ pub fn step_forward(
             let the_data = program[address];
             stdin_stdout[0] = the_data;
             (position + 2, program)
+        }
+        JumpIfTrue(arg1, arg2) => {
+            let (a, b) = (
+                get_val(position + 1, arg1, &program),
+                get_val(position + 2, arg2, &program),
+            );
+            if a != 0 {
+                (b as usize, program)
+            } else {
+                (position + 3, program)
+            }
+        }
+        JumpIfFalse(arg1, arg2) => {
+            let (a, b) = (
+                get_val(position + 1, arg1, &program),
+                get_val(position + 2, arg2, &program),
+            );
+            if a == 0 {
+                (b as usize, program)
+            } else {
+                (position + 3, program)
+            }
+        }
+        LessThan(arg1, arg2, _arg3) => {
+            let (left, right, destination_pos) = (
+                get_val(position + 1, arg1, &program),
+                get_val(position + 2, arg2, &program),
+                get_val(position + 3, ParameterMode::Immediate, &program) as usize,
+            );
+            if left < right {
+                program[destination_pos] = 1;
+            } else {
+                program[destination_pos] = 0;
+            }
+            (position + 4, program)
+        }
+        Equals(arg1, arg2, _arg3) => {
+            let (left, right, destination_pos) = (
+                get_val(position + 1, arg1, &program),
+                get_val(position + 2, arg2, &program),
+                get_val(position + 3, ParameterMode::Immediate, &program) as usize,
+            );
+            if left == right {
+                program[destination_pos] = 1;
+            } else {
+                program[destination_pos] = 0;
+            }
+            (position + 4, program)
         }
         Halt => {
             println!("got a stop");
@@ -198,8 +314,6 @@ pub fn run_program(mut program: Vec<i32>, mut stdin_stdout: &mut Vec<i32>) -> Ve
     let mut position = 0;
     loop {
         let peek_instr = program[position as usize];
-        dbg!(counter);
-        dbg!(peek_instr);
         if peek_instr == 99 {
             return program;
         } else if counter > 1000 {
