@@ -2,16 +2,81 @@ use std::fs;
 
 //type Result<T> = ::std::result::Result<T, dyn std::error::Error>;
 
-pub fn fuel_cost(n: f64) -> f64 {
-    (n / 3.0).trunc() - 2.0
+#[derive(Debug, PartialEq)]
+pub enum ParameterMode {
+    Position,
+    Immediate,
 }
 
-pub fn true_fuel_cost(n: f64) -> f64 {
-    let cost = fuel_cost(n);
-    if cost <= 0.0 {
-        return 0.0;
+#[derive(Debug, PartialEq)]
+pub enum Opcode {
+    Mult(ParameterMode, ParameterMode, ParameterMode),
+    Add(ParameterMode, ParameterMode, ParameterMode),
+    TakeInput,
+    ReturnInput,
+    Halt,
+}
+
+pub enum InstructionClass {
+    Mult,
+    Add,
+    TakeInput,
+    ReturnInput,
+    Halt,
+}
+
+pub fn parse_opcode(instruction: i32) -> Opcode {
+    use Opcode::*;
+    use ParameterMode::*;
+    let inst_class = match instruction % 10 {
+        1 => InstructionClass::Add,
+        2 => InstructionClass::Mult,
+        9 => InstructionClass::Halt, // should be 99 but oh well
+        x => {
+            panic!("got a {}", x);
+        }
+    };
+    match inst_class {
+        InstructionClass::Add => {
+            let first_param = if instruction / 100 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            let second_param = if instruction / 1000 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            let third_param = if instruction / 10000 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            Add(first_param, second_param, third_param)
+        }
+        InstructionClass::Mult => {
+            let first_param = if instruction / 100 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            let second_param = if instruction / 1000 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            let third_param = if instruction / 10000 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            Mult(first_param, second_param, third_param)
+        }
+        InstructionClass::Halt => Halt, // should be 99 but oh well
+        InstructionClass::TakeInput => TakeInput,
+        InstructionClass::ReturnInput => ReturnInput,
     }
-    cost + true_fuel_cost(cost)
 }
 
 pub fn main() -> std::io::Result<()> {
@@ -64,32 +129,32 @@ fn wrap_pos(try_pos: usize, length: usize) -> usize {
     }
 }
 
+fn get_val(position: usize, _mode: ParameterMode, program: &Vec<i32>) -> i32 {
+    let a = wrap_pos(position, program.len() - 1);
+    match _mode {
+        ParameterMode::Immediate => program[a],
+        ParameterMode::Position => program[program[a] as usize],
+    }
+}
+
 pub fn step_forward(position: usize, mut program: Vec<i32>) -> (usize, Vec<i32>) {
     let instruction = program[position];
     let new_state = match instruction {
         1 => {
-            let arg1 = wrap_pos(position + 1, program.len() - 1);
-            let arg2 = wrap_pos(position + 2, program.len() - 1);
-            let arg3 = wrap_pos(position + 3, program.len() - 1);
-            let (left_pos, right_pos, destination_pos) = (
-                program[arg1] as usize,
-                program[arg2] as usize,
-                program[arg3] as usize,
+            let (left, right, destination_pos) = (
+                get_val(position + 1, ParameterMode::Position, &program),
+                get_val(position + 2, ParameterMode::Position, &program),
+                get_val(position + 3, ParameterMode::Immediate, &program) as usize,
             );
-            let (left, right) = (program[left_pos], program[right_pos]);
             program[destination_pos] = left + right;
             program
         }
         2 => {
-            let arg1 = wrap_pos(position + 1, program.len() - 1);
-            let arg2 = wrap_pos(position + 2, program.len() - 1);
-            let arg3 = wrap_pos(position + 3, program.len() - 1);
-            let (left_pos, right_pos, destination_pos) = (
-                program[arg1] as usize,
-                program[arg2] as usize,
-                program[arg3] as usize,
+            let (left, right, destination_pos) = (
+                get_val(position + 1, ParameterMode::Position, &program),
+                get_val(position + 2, ParameterMode::Position, &program),
+                get_val(position + 3, ParameterMode::Immediate, &program) as usize,
             );
-            let (left, right) = (program[left_pos], program[right_pos]);
             program[destination_pos] = left * right;
             program
         }
@@ -156,6 +221,78 @@ mod tests {
         assert_eq!(
             next_program,
             vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
+        );
+    }
+
+    #[test]
+    fn test_halt_parse1() {
+        let i = parse_opcode(99);
+        assert_eq!(i, Opcode::Halt);
+    }
+
+    #[test]
+    fn test_add_parse1() {
+        let i = parse_opcode(1);
+        assert_eq!(
+            i,
+            Opcode::Add(
+                ParameterMode::Position,
+                ParameterMode::Position,
+                ParameterMode::Position
+            )
+        );
+    }
+
+    #[test]
+    fn test_mult_parse1() {
+        let i = parse_opcode(2);
+        assert_eq!(
+            i,
+            Opcode::Mult(
+                ParameterMode::Position,
+                ParameterMode::Position,
+                ParameterMode::Position
+            )
+        );
+    }
+
+    #[test]
+    fn test_mult_parse2_example() {
+        let i = parse_opcode(1002);
+        assert_eq!(
+            i,
+            Opcode::Mult(
+                ParameterMode::Position,
+                ParameterMode::Immediate,
+                ParameterMode::Position
+            )
+        );
+    }
+
+    #[test]
+    fn test_mult_parse2_example2() {
+        // this is actually broken, you can't have an instr param be immediate....
+        let i = parse_opcode(11002);
+        assert_eq!(
+            i,
+            Opcode::Mult(
+                ParameterMode::Position,
+                ParameterMode::Immediate,
+                ParameterMode::Immediate
+            )
+        );
+    }
+
+    #[test]
+    fn test_mult_parse2_example3() {
+        let i = parse_opcode(1102);
+        assert_eq!(
+            i,
+            Opcode::Mult(
+                ParameterMode::Immediate,
+                ParameterMode::Immediate,
+                ParameterMode::Position
+            )
         );
     }
 }
