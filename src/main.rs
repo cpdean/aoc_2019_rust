@@ -31,9 +31,11 @@ pub fn parse_opcode(instruction: i32) -> Opcode {
     let inst_class = match instruction % 10 {
         1 => InstructionClass::Add,
         2 => InstructionClass::Mult,
+        3 => InstructionClass::TakeInput,
+        4 => InstructionClass::ReturnInput,
         9 => InstructionClass::Halt, // should be 99 but oh well
         x => {
-            panic!("got a {:?}", x);
+            panic!("got a {:?}, from {:?}", x, instruction);
         }
     };
     match inst_class {
@@ -80,7 +82,7 @@ pub fn parse_opcode(instruction: i32) -> Opcode {
 }
 
 pub fn main() -> std::io::Result<()> {
-    let f = fs::read_to_string("input/day02.txt")?;
+    let f = fs::read_to_string("input/day05.txt")?;
     let input_state: Vec<i32> = f
         .trim()
         .split(",")
@@ -99,13 +101,11 @@ pub fn main() -> std::io::Result<()> {
      * with the value 12 and replace position 2 with the value 2. What value is left at
      * position 0 after the program halts?
      */
-    let mut instructions = input_state.clone();
-    println!("sum {}", input_state.iter().fold(0, |a, e| a + e));
-    instructions[1] = 12;
-    instructions[2] = 2;
-    let final_state = run_program(instructions);
-    println!("part 1: {}", final_state[0]);
-    // part 2
+    let instructions = input_state.clone();
+    let mut stdin_stdout = vec![1];
+    let _final_state = run_program(instructions, &mut stdin_stdout);
+    dbg!(stdin_stdout);
+    /*
     let target = 19690720;
     for noun in 0..=99 {
         for verb in 0..=99 {
@@ -118,6 +118,7 @@ pub fn main() -> std::io::Result<()> {
             }
         }
     }
+    */
     Ok(())
 }
 
@@ -144,19 +145,25 @@ pub fn step_forward(
     use Opcode::*;
     let instruction = parse_opcode(program[position]);
     let (new_pos, new_state) = match instruction {
-        Add(arg1, arg2, arg3) => {
+        Add(arg1, arg2, _arg3) => {
+            dbg!(&arg1);
+            dbg!(&arg2);
+            dbg!(&_arg3);
             let (left, right, destination_pos) = (
-                get_val(position + 1, ParameterMode::Position, &program),
-                get_val(position + 2, ParameterMode::Position, &program),
+                get_val(position + 1, arg1, &program),
+                get_val(position + 2, arg2, &program),
                 get_val(position + 3, ParameterMode::Immediate, &program) as usize,
             );
+            dbg!(&left);
+            dbg!(&right);
             program[destination_pos] = left + right;
+            dbg!(program[destination_pos]);
             (position + 4, program)
         }
-        Mult(arg1, arg2, arg3) => {
+        Mult(arg1, arg2, _arg3) => {
             let (left, right, destination_pos) = (
-                get_val(position + 1, ParameterMode::Position, &program),
-                get_val(position + 2, ParameterMode::Position, &program),
+                get_val(position + 1, arg1, &program),
+                get_val(position + 2, arg2, &program),
                 get_val(position + 3, ParameterMode::Immediate, &program) as usize,
             );
             program[destination_pos] = left * right;
@@ -164,12 +171,16 @@ pub fn step_forward(
         }
         TakeInput => {
             let the_data = stdin_stdout[0];
-            let address = wrap_pos(position + 1, program.len() - 1);
+            dbg!(the_data);
+            let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
+            dbg!(address);
+            dbg!(program[address]);
             program[address] = the_data;
+            dbg!(program[address]);
             (position + 2, program)
         }
         ReturnInput => {
-            let address = wrap_pos(position + 1, program.len() - 1);
+            let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
             let the_data = program[address];
             stdin_stdout[0] = the_data;
             (position + 2, program)
@@ -178,19 +189,17 @@ pub fn step_forward(
             println!("got a stop");
             (position + 4, program)
         }
-        x => {
-            panic!("got a {:?}", x);
-        }
     };
     (wrap_pos(new_pos, new_state.len()), new_state)
 }
 
-pub fn run_program(mut program: Vec<i32>) -> Vec<i32> {
-    let counter = 0;
+pub fn run_program(mut program: Vec<i32>, mut stdin_stdout: &mut Vec<i32>) -> Vec<i32> {
+    let mut counter = 0;
     let mut position = 0;
-    let mut stdin_stdout = vec![1];
     loop {
         let peek_instr = program[position as usize];
+        dbg!(counter);
+        dbg!(peek_instr);
         if peek_instr == 99 {
             return program;
         } else if counter > 1000 {
@@ -199,6 +208,7 @@ pub fn run_program(mut program: Vec<i32>) -> Vec<i32> {
             let (i, s) = step_forward(position, program, &mut stdin_stdout);
             position = i;
             program = s;
+            counter += 1;
         }
     }
 }
@@ -220,6 +230,15 @@ mod tests {
     }
 
     #[test]
+    fn it_works2() {
+        let program = vec![1101, 100, -1, 4, 0];
+        let position = 0;
+        let (next_position, next_program) = step_forward(position, program, &mut vec![0]);
+        assert_eq!(next_position, 4);
+        assert_eq!(next_program, vec![1101, 100, -1, 4, 99]);
+    }
+
+    #[test]
     fn step_2() {
         let program = vec![1, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50];
         let position = 4;
@@ -234,7 +253,7 @@ mod tests {
     #[test]
     fn test_run() {
         let program = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
-        let next_program = run_program(program);
+        let next_program = run_program(program, &mut vec![0]);
         assert_eq!(
             next_program,
             vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
