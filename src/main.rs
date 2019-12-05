@@ -168,13 +168,6 @@ pub fn main() -> std::io::Result<()> {
             i
         })
         .collect();
-    /* prompt:
-     * Once you have a working computer, the first step is to restore the gravity assist
-     * program (your puzzle input) to the "1202 program alarm" state it had just before the
-     * last computer caught fire. To do this, before running the program, replace position 1
-     * with the value 12 and replace position 2 with the value 2. What value is left at
-     * position 0 after the program halts?
-     */
     let instructions = input_state.clone();
     let mut stdin_stdout = vec![1];
     let _final_state = run_program(instructions, &mut stdin_stdout);
@@ -183,20 +176,6 @@ pub fn main() -> std::io::Result<()> {
     let mut stdin_stdout = vec![5];
     let _final_state = run_program(instructions, &mut stdin_stdout);
     dbg!(stdin_stdout);
-    /*
-    let target = 19690720;
-    for noun in 0..=99 {
-        for verb in 0..=99 {
-            let mut part2 = input_state.clone();
-            part2[1] = noun;
-            part2[2] = verb;
-            let attempt = run_program(part2);
-            if attempt[0] == target {
-                println!("part2 100 * {} + {} = {}", noun, verb, 100 * noun + verb);
-            }
-        }
-    }
-    */
     Ok(())
 }
 
