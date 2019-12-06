@@ -1,27 +1,19 @@
 from collections import defaultdict
 import sqlite3
 
-def parse_orbital_map(file_body):
-    orbital_map = defaultdict(list)
-    for line in file_body.split("\n"):
+def sql_orbital(file_body):
+    conn = sqlite3.connect(":memory:")
+    cursor = conn.cursor()
+    cursor.execute("""
+    create table orbits (root text, leaf text);
+    """)
+    for line in file_body.strip().split("\n"):
         root, leaf = line.strip().split(")")
-        orbital_map[root].append(leaf)
-    return orbital_map
-
-def orbit_count(orbital_map, body):
-    print(f"visiting {body}")
-    if len(orbital_map[body]) == 0:
-        return 1
-    else:
-        s = 1
-        for c in orbital_map[body]:
-            print(f"visiting child {c}")
-            the_count = orbit_count(orbital_map, c)
-            print(f"got {the_count}")
-            s += the_count
-        print(f"total orbits under {body}, {s}")
-        return s
-test_example()
+        cursor.execute("""
+        insert into orbits VALUES (?, ?)
+        """, (root, leaf))
+    conn.commit()
+    return (cursor, conn)
 
 def test_example():
     file_body = """COM)B
@@ -34,24 +26,32 @@ G)H
 D)I
 E)J
 J)K
-K)L"""
+K)L
+K)YOU
+I)SAN"""
     om = sql_orbital(file_body)
     cursor, conn = om
 
-
-def sql_orbital(file_body):
-    conn = sqlite3.connect(":memory:")
-    cursor = conn.cursor()
+    # can_reach(Root, Leaf) :- orbit(Root, Leaf).
+    # can_reach(Root, Leaf) :- orbit(Root, X), can_reach(X, Leaf).
     cursor.execute("""
-    create table orbits (root text, leaf text);
-    """)
-    for line in file_body.split("\n"):
-        root, leaf = line.strip().split(")")
-        cursor.execute("""
-        insert into orbits VALUES (?, ?)
-        """, (root, leaf))
-    conn.commit()
-    return (cursor, conn)
+    with recursive can_reach as (
+    select
+    root, leaf, 0 degree
+    from orbits
+    union all
+    select
+    o.root, can_reach.leaf, can_reach.degree + 1 degree
+    from orbits o
+    join can_reach on o.leaf = can_reach.root
+    )
+    select
+    *
+    from can_reach
+    where leaf = 'YOU'
+    or leaf = 'SAN'
+    """).fetchall()
+
 
 def sql_orbital_count(file_body):
     cursor, conn = sql_orbital(file_body)
@@ -75,4 +75,4 @@ def sql_orbital_count(file_body):
 
 with open("input/day06.txt") as f:
     file_body = f.read()
-    orbital_map = parse_orbital_map(file_body)
+    print(sql_orbital_count(file_body))
