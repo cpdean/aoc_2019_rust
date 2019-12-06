@@ -50,6 +50,7 @@ I)SAN"""
     from can_reach
     where leaf = 'YOU'
     or leaf = 'SAN'
+    order by root
     """).fetchall()
 
 
