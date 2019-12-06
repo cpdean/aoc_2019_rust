@@ -124,6 +124,7 @@ def sql_transfer_distance(file_body):
     return c
 
 def sql_orbital_count(file_body):
+    # orbit(Root, Leaf).
     # can_reach(Root, Leaf) :- orbit(Root, Leaf).
     # can_reach(Root, Leaf) :- orbit(Root, X), can_reach(X, Leaf).
     cursor, conn = sql_orbital(file_body)
