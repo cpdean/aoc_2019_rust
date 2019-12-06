@@ -15,7 +15,7 @@ pub fn main() -> std::io::Result<()> {
     let mut orbital_map: HashMap<&str, Vec<&str>> = HashMap::new();
     for (root, leaf) in map_pairs {
         if orbital_map.contains_key(root) {
-            let child_list: &Vec<&str> = orbital_map.get(root).unwrap();
+            let child_list: &mut Vec<&str> = orbital_map.get_mut(root).unwrap();
             child_list.push(leaf);
         } else {
             orbital_map.insert(root, vec![leaf]).unwrap();
