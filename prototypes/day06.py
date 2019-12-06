@@ -124,17 +124,19 @@ def sql_transfer_distance(file_body):
     return c
 
 def sql_orbital_count(file_body):
+    # can_reach(Root, Leaf) :- orbit(Root, Leaf).
+    # can_reach(Root, Leaf) :- orbit(Root, X), can_reach(X, Leaf).
     cursor, conn = sql_orbital(file_body)
     (count, ) = cursor.execute("""
     with recursive can_reach as (
     select
-    root, leaf
+    root, leaf, 0 degree
     from orbits
     union all
     select
-    o.root, o.leaf
+    o.root, can_reach.leaf, can_reach.degree + 1 degree
     from orbits o
-    join can_reach on o.root = can_reach.leaf
+    join can_reach on o.leaf = can_reach.root
     )
     select
     count(1)
