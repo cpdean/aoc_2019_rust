@@ -156,9 +156,381 @@ pub fn parse_opcode(instruction: i32) -> Opcode {
     }
 }
 
+pub fn input_combinations_part2() -> Vec<Vec<i32>> {
+    vec![
+        vec![5, 6, 7, 8, 9],
+        vec![5, 6, 7, 9, 8],
+        vec![5, 6, 8, 7, 9],
+        vec![5, 6, 8, 9, 7],
+        vec![5, 6, 9, 7, 8],
+        vec![5, 6, 9, 8, 7],
+        vec![5, 7, 6, 8, 9],
+        vec![5, 7, 6, 9, 8],
+        vec![5, 7, 8, 6, 9],
+        vec![5, 7, 8, 9, 6],
+        vec![5, 7, 9, 6, 8],
+        vec![5, 7, 9, 8, 6],
+        vec![5, 8, 6, 7, 9],
+        vec![5, 8, 6, 9, 7],
+        vec![5, 8, 7, 6, 9],
+        vec![5, 8, 7, 9, 6],
+        vec![5, 8, 9, 6, 7],
+        vec![5, 8, 9, 7, 6],
+        vec![5, 9, 6, 7, 8],
+        vec![5, 9, 6, 8, 7],
+        vec![5, 9, 7, 6, 8],
+        vec![5, 9, 7, 8, 6],
+        vec![5, 9, 8, 6, 7],
+        vec![5, 9, 8, 7, 6],
+        vec![6, 5, 7, 8, 9],
+        vec![6, 5, 7, 9, 8],
+        vec![6, 5, 8, 7, 9],
+        vec![6, 5, 8, 9, 7],
+        vec![6, 5, 9, 7, 8],
+        vec![6, 5, 9, 8, 7],
+        vec![6, 7, 5, 8, 9],
+        vec![6, 7, 5, 9, 8],
+        vec![6, 7, 8, 5, 9],
+        vec![6, 7, 8, 9, 5],
+        vec![6, 7, 9, 5, 8],
+        vec![6, 7, 9, 8, 5],
+        vec![6, 8, 5, 7, 9],
+        vec![6, 8, 5, 9, 7],
+        vec![6, 8, 7, 5, 9],
+        vec![6, 8, 7, 9, 5],
+        vec![6, 8, 9, 5, 7],
+        vec![6, 8, 9, 7, 5],
+        vec![6, 9, 5, 7, 8],
+        vec![6, 9, 5, 8, 7],
+        vec![6, 9, 7, 5, 8],
+        vec![6, 9, 7, 8, 5],
+        vec![6, 9, 8, 5, 7],
+        vec![6, 9, 8, 7, 5],
+        vec![7, 5, 6, 8, 9],
+        vec![7, 5, 6, 9, 8],
+        vec![7, 5, 8, 6, 9],
+        vec![7, 5, 8, 9, 6],
+        vec![7, 5, 9, 6, 8],
+        vec![7, 5, 9, 8, 6],
+        vec![7, 6, 5, 8, 9],
+        vec![7, 6, 5, 9, 8],
+        vec![7, 6, 8, 5, 9],
+        vec![7, 6, 8, 9, 5],
+        vec![7, 6, 9, 5, 8],
+        vec![7, 6, 9, 8, 5],
+        vec![7, 8, 5, 6, 9],
+        vec![7, 8, 5, 9, 6],
+        vec![7, 8, 6, 5, 9],
+        vec![7, 8, 6, 9, 5],
+        vec![7, 8, 9, 5, 6],
+        vec![7, 8, 9, 6, 5],
+        vec![7, 9, 5, 6, 8],
+        vec![7, 9, 5, 8, 6],
+        vec![7, 9, 6, 5, 8],
+        vec![7, 9, 6, 8, 5],
+        vec![7, 9, 8, 5, 6],
+        vec![7, 9, 8, 6, 5],
+        vec![8, 5, 6, 7, 9],
+        vec![8, 5, 6, 9, 7],
+        vec![8, 5, 7, 6, 9],
+        vec![8, 5, 7, 9, 6],
+        vec![8, 5, 9, 6, 7],
+        vec![8, 5, 9, 7, 6],
+        vec![8, 6, 5, 7, 9],
+        vec![8, 6, 5, 9, 7],
+        vec![8, 6, 7, 5, 9],
+        vec![8, 6, 7, 9, 5],
+        vec![8, 6, 9, 5, 7],
+        vec![8, 6, 9, 7, 5],
+        vec![8, 7, 5, 6, 9],
+        vec![8, 7, 5, 9, 6],
+        vec![8, 7, 6, 5, 9],
+        vec![8, 7, 6, 9, 5],
+        vec![8, 7, 9, 5, 6],
+        vec![8, 7, 9, 6, 5],
+        vec![8, 9, 5, 6, 7],
+        vec![8, 9, 5, 7, 6],
+        vec![8, 9, 6, 5, 7],
+        vec![8, 9, 6, 7, 5],
+        vec![8, 9, 7, 5, 6],
+        vec![8, 9, 7, 6, 5],
+        vec![9, 5, 6, 7, 8],
+        vec![9, 5, 6, 8, 7],
+        vec![9, 5, 7, 6, 8],
+        vec![9, 5, 7, 8, 6],
+        vec![9, 5, 8, 6, 7],
+        vec![9, 5, 8, 7, 6],
+        vec![9, 6, 5, 7, 8],
+        vec![9, 6, 5, 8, 7],
+        vec![9, 6, 7, 5, 8],
+        vec![9, 6, 7, 8, 5],
+        vec![9, 6, 8, 5, 7],
+        vec![9, 6, 8, 7, 5],
+        vec![9, 7, 5, 6, 8],
+        vec![9, 7, 5, 8, 6],
+        vec![9, 7, 6, 5, 8],
+        vec![9, 7, 6, 8, 5],
+        vec![9, 7, 8, 5, 6],
+        vec![9, 7, 8, 6, 5],
+        vec![9, 8, 5, 6, 7],
+        vec![9, 8, 5, 7, 6],
+        vec![9, 8, 6, 5, 7],
+        vec![9, 8, 6, 7, 5],
+        vec![9, 8, 7, 5, 6],
+        vec![9, 8, 7, 6, 5],
+    ]
+}
+
+pub fn input_combinations_part1() -> Vec<Vec<i32>> {
+    /* I didn't want to figure out how to translate a permutation alg to rust because of its
+     * memory issues. generated this source code from a python script lol:
+     *
+     *     from itertools import permutations
+     *     print("vec![")
+     *     for p in permutations(range(5), 5):
+     *         print("vec!{},".format(list(p)))
+     *     print("]")
+     *
+     */
+    vec![
+        vec![0, 1, 2, 3, 4],
+        vec![0, 1, 2, 4, 3],
+        vec![0, 1, 3, 2, 4],
+        vec![0, 1, 3, 4, 2],
+        vec![0, 1, 4, 2, 3],
+        vec![0, 1, 4, 3, 2],
+        vec![0, 2, 1, 3, 4],
+        vec![0, 2, 1, 4, 3],
+        vec![0, 2, 3, 1, 4],
+        vec![0, 2, 3, 4, 1],
+        vec![0, 2, 4, 1, 3],
+        vec![0, 2, 4, 3, 1],
+        vec![0, 3, 1, 2, 4],
+        vec![0, 3, 1, 4, 2],
+        vec![0, 3, 2, 1, 4],
+        vec![0, 3, 2, 4, 1],
+        vec![0, 3, 4, 1, 2],
+        vec![0, 3, 4, 2, 1],
+        vec![0, 4, 1, 2, 3],
+        vec![0, 4, 1, 3, 2],
+        vec![0, 4, 2, 1, 3],
+        vec![0, 4, 2, 3, 1],
+        vec![0, 4, 3, 1, 2],
+        vec![0, 4, 3, 2, 1],
+        vec![1, 0, 2, 3, 4],
+        vec![1, 0, 2, 4, 3],
+        vec![1, 0, 3, 2, 4],
+        vec![1, 0, 3, 4, 2],
+        vec![1, 0, 4, 2, 3],
+        vec![1, 0, 4, 3, 2],
+        vec![1, 2, 0, 3, 4],
+        vec![1, 2, 0, 4, 3],
+        vec![1, 2, 3, 0, 4],
+        vec![1, 2, 3, 4, 0],
+        vec![1, 2, 4, 0, 3],
+        vec![1, 2, 4, 3, 0],
+        vec![1, 3, 0, 2, 4],
+        vec![1, 3, 0, 4, 2],
+        vec![1, 3, 2, 0, 4],
+        vec![1, 3, 2, 4, 0],
+        vec![1, 3, 4, 0, 2],
+        vec![1, 3, 4, 2, 0],
+        vec![1, 4, 0, 2, 3],
+        vec![1, 4, 0, 3, 2],
+        vec![1, 4, 2, 0, 3],
+        vec![1, 4, 2, 3, 0],
+        vec![1, 4, 3, 0, 2],
+        vec![1, 4, 3, 2, 0],
+        vec![2, 0, 1, 3, 4],
+        vec![2, 0, 1, 4, 3],
+        vec![2, 0, 3, 1, 4],
+        vec![2, 0, 3, 4, 1],
+        vec![2, 0, 4, 1, 3],
+        vec![2, 0, 4, 3, 1],
+        vec![2, 1, 0, 3, 4],
+        vec![2, 1, 0, 4, 3],
+        vec![2, 1, 3, 0, 4],
+        vec![2, 1, 3, 4, 0],
+        vec![2, 1, 4, 0, 3],
+        vec![2, 1, 4, 3, 0],
+        vec![2, 3, 0, 1, 4],
+        vec![2, 3, 0, 4, 1],
+        vec![2, 3, 1, 0, 4],
+        vec![2, 3, 1, 4, 0],
+        vec![2, 3, 4, 0, 1],
+        vec![2, 3, 4, 1, 0],
+        vec![2, 4, 0, 1, 3],
+        vec![2, 4, 0, 3, 1],
+        vec![2, 4, 1, 0, 3],
+        vec![2, 4, 1, 3, 0],
+        vec![2, 4, 3, 0, 1],
+        vec![2, 4, 3, 1, 0],
+        vec![3, 0, 1, 2, 4],
+        vec![3, 0, 1, 4, 2],
+        vec![3, 0, 2, 1, 4],
+        vec![3, 0, 2, 4, 1],
+        vec![3, 0, 4, 1, 2],
+        vec![3, 0, 4, 2, 1],
+        vec![3, 1, 0, 2, 4],
+        vec![3, 1, 0, 4, 2],
+        vec![3, 1, 2, 0, 4],
+        vec![3, 1, 2, 4, 0],
+        vec![3, 1, 4, 0, 2],
+        vec![3, 1, 4, 2, 0],
+        vec![3, 2, 0, 1, 4],
+        vec![3, 2, 0, 4, 1],
+        vec![3, 2, 1, 0, 4],
+        vec![3, 2, 1, 4, 0],
+        vec![3, 2, 4, 0, 1],
+        vec![3, 2, 4, 1, 0],
+        vec![3, 4, 0, 1, 2],
+        vec![3, 4, 0, 2, 1],
+        vec![3, 4, 1, 0, 2],
+        vec![3, 4, 1, 2, 0],
+        vec![3, 4, 2, 0, 1],
+        vec![3, 4, 2, 1, 0],
+        vec![4, 0, 1, 2, 3],
+        vec![4, 0, 1, 3, 2],
+        vec![4, 0, 2, 1, 3],
+        vec![4, 0, 2, 3, 1],
+        vec![4, 0, 3, 1, 2],
+        vec![4, 0, 3, 2, 1],
+        vec![4, 1, 0, 2, 3],
+        vec![4, 1, 0, 3, 2],
+        vec![4, 1, 2, 0, 3],
+        vec![4, 1, 2, 3, 0],
+        vec![4, 1, 3, 0, 2],
+        vec![4, 1, 3, 2, 0],
+        vec![4, 2, 0, 1, 3],
+        vec![4, 2, 0, 3, 1],
+        vec![4, 2, 1, 0, 3],
+        vec![4, 2, 1, 3, 0],
+        vec![4, 2, 3, 0, 1],
+        vec![4, 2, 3, 1, 0],
+        vec![4, 3, 0, 1, 2],
+        vec![4, 3, 0, 2, 1],
+        vec![4, 3, 1, 0, 2],
+        vec![4, 3, 1, 2, 0],
+        vec![4, 3, 2, 0, 1],
+        vec![4, 3, 2, 1, 0],
+    ]
+}
+
+pub fn find_max_signal(amplifier_software: Vec<i32>) -> i32 {
+    let mut m = 0;
+    for input_config in input_combinations_part1() {
+        let signal = get_amplifier_signal_part1(&amplifier_software, input_config);
+        if m < signal {
+            m = signal
+        }
+    }
+    m
+}
+
+pub fn find_max_signal_part2(amplifier_software: Vec<i32>) -> i32 {
+    let mut m = 0;
+    for input_config in input_combinations_part1() {
+        let signal = get_amplifier_signal_part2(&amplifier_software, input_config);
+        if m < signal {
+            m = signal
+        }
+    }
+    m
+}
+
+pub fn get_amplifier_signal_part1(
+    amplifier_software: &Vec<i32>,
+    mut input_config: Vec<i32>,
+) -> i32 {
+    // works by chaining several computers together, feeding each one an input plus a second
+    // number you get from the previous computer
+
+    // A->B->C->D->E-> {i32}
+    assert_eq!(input_config.len(), 5);
+
+    let mut stdin = vec![];
+    let mut stdout = vec![];
+    // run amp A
+    let instructions = amplifier_software.clone();
+    stdin.push(input_config.remove(0));
+    stdin.push(0);
+    run_program(instructions, &mut stdin, &mut stdout);
+    // run amp B
+    let instructions = amplifier_software.clone();
+    stdin.push(input_config.remove(0));
+    assert_eq!(stdout.len(), 1);
+    stdin.push(stdout.remove(0));
+    run_program(instructions, &mut stdin, &mut stdout);
+    // run amp C
+    let instructions = amplifier_software.clone();
+    stdin.push(input_config.remove(0));
+    assert_eq!(stdout.len(), 1);
+    stdin.push(stdout.remove(0));
+    run_program(instructions, &mut stdin, &mut stdout);
+    // run amp D
+    let instructions = amplifier_software.clone();
+    stdin.push(input_config.remove(0));
+    assert_eq!(stdout.len(), 1);
+    stdin.push(stdout.remove(0));
+    run_program(instructions, &mut stdin, &mut stdout);
+    // run amp E
+    let instructions = amplifier_software.clone();
+    stdin.push(input_config.remove(0));
+    assert_eq!(stdout.len(), 1);
+    stdin.push(stdout.remove(0));
+    run_program(instructions, &mut stdin, &mut stdout);
+    assert_eq!(stdout.len(), 1);
+    stdout.remove(0)
+}
+
+pub fn get_amplifier_signal_part2(
+    amplifier_software: &Vec<i32>,
+    mut input_config: Vec<i32>,
+) -> i32 {
+    // now the computers must run in a cycle, processing input from the computer in front of it
+    // this is much harder because I have to re-do how halting works, implement blocking, and write
+    // what is going to essentially be a scheduler to switch control flow to the next computer in
+    // the ring
+
+    // A->B->C->D->E->-+(when halts...)--> {i32}
+    // ^               |
+    // +-------<-------+
+    //
+    // additionally I cannot re-use the stdin/stdout pipes, i have to make a pipe for each
+    // connection
+
+    let mut stdin_a = vec![];
+    let mut stdin_b = vec![];
+    let mut stdin_c = vec![];
+    let mut stdin_d = vec![];
+    let mut stdin_e = vec![];
+    // load initial params
+    stdin_a.push(input_config.remove(0));
+    stdin_b.push(input_config.remove(0));
+    stdin_c.push(input_config.remove(0));
+    stdin_d.push(input_config.remove(0));
+    stdin_e.push(input_config.remove(0));
+    // run amp A
+    let instructions = amplifier_software.clone();
+    stdin_a.push(0);
+    run_program(instructions, &mut stdin_a, &mut stdin_b);
+    // run amp b
+    let instructions = amplifier_software.clone();
+    run_program(instructions, &mut stdin_b, &mut stdin_c);
+    // run amp c
+    let instructions = amplifier_software.clone();
+    run_program(instructions, &mut stdin_c, &mut stdin_d);
+    // run amp d
+    let instructions = amplifier_software.clone();
+    run_program(instructions, &mut stdin_d, &mut stdin_e);
+    // run amp e
+    let instructions = amplifier_software.clone();
+    run_program(instructions, &mut stdin_e, &mut stdin_a);
+    stdin_a.remove(0)
+}
+
 pub fn main() -> std::io::Result<()> {
-    //let f = fs::read_to_string("input/day07.txt")?;
-    let f = fs::read_to_string("input/day05.txt")?;
+    let f = fs::read_to_string("input/day07.txt")?;
     let input_state: Vec<i32> = f
         .trim()
         .split(",")
@@ -171,15 +543,8 @@ pub fn main() -> std::io::Result<()> {
         })
         .collect();
     let instructions = input_state.clone();
-    let mut stdin = vec![1];
-    let mut stdout = vec![1];
-    let _final_state = run_program(instructions, &mut stdin, &mut stdout);
-    dbg!(stdout);
-    let instructions = input_state.clone();
-    let mut stdin = vec![5];
-    let mut stdout = vec![5];
-    let _final_state = run_program(instructions, &mut stdin, &mut stdout);
-    dbg!(stdout);
+    let pt_1_max = find_max_signal(instructions);
+    dbg!(pt_1_max);
     Ok(())
 }
 
@@ -226,7 +591,7 @@ pub fn step_forward(
             (position + 4, program)
         }
         TakeInput => {
-            let the_data = stdin[0];
+            let the_data = stdin.remove(0);
             let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
             program[address] = the_data;
             (position + 2, program)
@@ -234,7 +599,7 @@ pub fn step_forward(
         ReturnInput => {
             let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
             let the_data = program[address];
-            stdout[0] = the_data;
+            stdout.push(the_data);
             (position + 2, program)
         }
         JumpIfTrue(arg1, arg2) => {
@@ -435,5 +800,135 @@ mod tests {
                 ParameterMode::Position
             )
         );
+    }
+
+    #[test]
+    fn test_input_consume_removes_item() {
+        let f = fs::read_to_string("input/day05.txt").unwrap();
+        let input_state: Vec<i32> = f
+            .trim()
+            .split(",")
+            .map(|e| {
+                let i: i32 = match e.parse() {
+                    Ok(x) => x,
+                    Err(error) => panic!("what is this <{}>", error),
+                };
+                i
+            })
+            .collect();
+        let instructions = input_state.clone();
+        let mut stdin = vec![1];
+        let mut stdout = vec![];
+        let _final_state = run_program(instructions, &mut stdin, &mut stdout);
+        assert_eq!(stdin, vec![]);
+        // !!!! super weird!!!!
+        assert_eq!(stdout[stdout.len() - 1], 12440243);
+    }
+
+    #[test]
+    fn test_input_consume_removes_item2() {
+        let f = fs::read_to_string("input/day05.txt").unwrap();
+        let input_state: Vec<i32> = f
+            .trim()
+            .split(",")
+            .map(|e| {
+                let i: i32 = match e.parse() {
+                    Ok(x) => x,
+                    Err(error) => panic!("what is this <{}>", error),
+                };
+                i
+            })
+            .collect();
+        let instructions = input_state.clone();
+        let mut stdin = vec![5];
+        let mut stdout = vec![];
+        let _final_state = run_program(instructions, &mut stdin, &mut stdout);
+        assert_eq!(stdin, vec![]);
+        assert_eq!(stdout, vec![15486302]);
+    }
+
+    #[test]
+    fn test_amplifier_checker_example1() {
+        let input_state: Vec<i32> = vec![
+            3, 15, 3, 16, 1002, 16, 10, 16, 1, 16, 15, 15, 4, 15, 99, 0, 0,
+        ];
+        let input_config: Vec<i32> = vec![4, 3, 2, 1, 0];
+        let instructions = input_state.clone();
+        let signal = get_amplifier_signal_part1(&instructions, input_config);
+        assert_eq!(signal, 43210);
+    }
+
+    fn _test_amplifier_checker_example1_is_max() {
+        // need to figure out combinatorics
+        let input_state: Vec<i32> = vec![
+            3, 15, 3, 16, 1002, 16, 10, 16, 1, 16, 15, 15, 4, 15, 99, 0, 0,
+        ];
+        let input_config: Vec<i32> = vec![4, 4, 4, 4, 4];
+        let instructions = input_state.clone();
+        let signal = get_amplifier_signal_part1(&instructions, input_config);
+        assert_eq!(signal, 43210);
+    }
+
+    #[test]
+    fn test_amplifier_checker_example2() {
+        let input_state: Vec<i32> = vec![
+            3, 23, 3, 24, 1002, 24, 10, 24, 1002, 23, -1, 23, 101, 5, 23, 23, 1, 24, 23, 23, 4, 23,
+            99, 0, 0,
+        ];
+        let input_config: Vec<i32> = vec![0, 1, 2, 3, 4];
+        let instructions = input_state.clone();
+        let signal = get_amplifier_signal_part1(&instructions, input_config);
+        assert_eq!(signal, 54321);
+    }
+
+    #[test]
+    fn test_amplifier_checker_example2_probably_max() {
+        let input_state: Vec<i32> = vec![
+            3, 23, 3, 24, 1002, 24, 10, 24, 1002, 23, -1, 23, 101, 5, 23, 23, 1, 24, 23, 23, 4, 23,
+            99, 0, 0,
+        ];
+        let input_config: Vec<i32> = vec![0, 1, 2, 4, 3];
+        let instructions = input_state.clone();
+        let signal = get_amplifier_signal_part1(&instructions, input_config);
+        assert_eq!(signal < 54321, true);
+    }
+
+    #[test]
+    fn test_find_max_of_example2() {
+        let input_state: Vec<i32> = vec![
+            3, 23, 3, 24, 1002, 24, 10, 24, 1002, 23, -1, 23, 101, 5, 23, 23, 1, 24, 23, 23, 4, 23,
+            99, 0, 0,
+        ];
+        let instructions = input_state.clone();
+        let signal = find_max_signal(instructions);
+        assert_eq!(signal, 54321);
+    }
+
+    #[test]
+    fn test_find_max_of_example3() {
+        let input_state: Vec<i32> = vec![
+            3, 31, 3, 32, 1002, 32, 10, 32, 1001, 31, -2, 31, 1007, 31, 0, 33, 1002, 33, 7, 33, 1,
+            33, 31, 31, 1, 32, 31, 31, 4, 31, 99, 0, 0, 0,
+        ];
+        let instructions = input_state.clone();
+        let signal = find_max_signal(instructions);
+        assert_eq!(signal, 65210);
+    }
+
+    #[test]
+    fn input_combo_works() {
+        let i = input_combinations_part1();
+        assert_eq!(i.len(), 120);
+    }
+
+    #[test]
+    fn test_try_thing() {
+        let input_state: Vec<i32> = vec![
+            3, 31, 3, 32, 1002, 32, 10, 32, 1001, 31, -2, 31, 1007, 31, 0, 33, 1002, 33, 7, 33, 1,
+            33, 31, 31, 1, 32, 31, 31, 4, 31, 99, 0, 0, 0,
+        ];
+        let instructions = input_state.clone();
+        let signal = find_max_signal_part2(instructions);
+        assert_eq!(signal, 65210);
     }
 }
