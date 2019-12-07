@@ -429,7 +429,7 @@ pub fn find_max_signal(amplifier_software: Vec<i32>) -> i32 {
 
 pub fn find_max_signal_part2(amplifier_software: Vec<i32>) -> i32 {
     let mut m = 0;
-    for input_config in input_combinations_part1() {
+    for input_config in input_combinations_part2() {
         let signal = get_amplifier_signal_part2(&amplifier_software, input_config);
         if m < signal {
             m = signal
@@ -924,11 +924,12 @@ mod tests {
     #[test]
     fn test_try_thing() {
         let input_state: Vec<i32> = vec![
-            3, 31, 3, 32, 1002, 32, 10, 32, 1001, 31, -2, 31, 1007, 31, 0, 33, 1002, 33, 7, 33, 1,
-            33, 31, 31, 1, 32, 31, 31, 4, 31, 99, 0, 0, 0,
+            3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26, 27, 4, 27, 1001, 28, -1,
+            28, 1005, 28, 6, 99, 0, 0, 5,
         ];
+        let input_config = vec![9, 8, 7, 6, 5];
         let instructions = input_state.clone();
-        let signal = find_max_signal_part2(instructions);
+        let signal = get_amplifier_signal_part2(&instructions, input_config);
         assert_eq!(signal, 65210);
     }
 }
