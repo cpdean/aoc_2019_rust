@@ -10,6 +10,13 @@ pub enum ParameterMode {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum InterruptState {
+    Running,
+    Blocked,
+    Halted,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Opcode {
     Mult(ParameterMode, ParameterMode, ParameterMode),
     Add(ParameterMode, ParameterMode, ParameterMode),
@@ -568,9 +575,10 @@ pub fn step_forward(
     mut program: Vec<i32>,
     stdin: &mut Vec<i32>,
     stdout: &mut Vec<i32>,
-) -> (usize, Vec<i32>) {
+) -> (InterruptState, usize, Vec<i32>) {
     use Opcode::*;
     let instruction = parse_opcode(program[position]);
+    let interrupt = InterruptState::Running;
     let (new_pos, new_state) = match instruction {
         Add(arg1, arg2, _arg3) => {
             let (left, right, destination_pos) = (
@@ -655,7 +663,7 @@ pub fn step_forward(
             (position + 4, program)
         }
     };
-    (wrap_pos(new_pos, new_state.len()), new_state)
+    (interrupt, wrap_pos(new_pos, new_state.len()), new_state)
 }
 
 pub fn run_program(
@@ -672,7 +680,29 @@ pub fn run_program(
         } else if counter > 1000 {
             panic!("infinite loop?");
         } else {
-            let (i, s) = step_forward(position, program, &mut stdin, &mut stdout);
+            let (_, i, s) = step_forward(position, program, &mut stdin, &mut stdout);
+            position = i;
+            program = s;
+            counter += 1;
+        }
+    }
+}
+
+pub fn run_program_interruptable(
+    mut program: Vec<i32>,
+    mut stdin: &mut Vec<i32>,
+    mut stdout: &mut Vec<i32>,
+) -> (InterruptState, Vec<i32>) {
+    let mut counter = 0;
+    let mut position = 0;
+    loop {
+        let peek_instr = program[position as usize];
+        if peek_instr == 99 {
+            return (InterruptState::Halted, program);
+        } else if counter > 1000 {
+            panic!("infinite loop?");
+        } else {
+            let (interrupt, i, s) = step_forward(position, program, &mut stdin, &mut stdout);
             position = i;
             program = s;
             counter += 1;
@@ -688,7 +718,7 @@ mod tests {
     fn it_works() {
         let program = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
         let position = 0;
-        let (next_position, next_program) =
+        let (_, next_position, next_program) =
             step_forward(position, program, &mut vec![0], &mut vec![0]);
         assert_eq!(next_position, 4);
         assert_eq!(
@@ -701,7 +731,7 @@ mod tests {
     fn it_works2() {
         let program = vec![1101, 100, -1, 4, 0];
         let position = 0;
-        let (next_position, next_program) =
+        let (_, next_position, next_program) =
             step_forward(position, program, &mut vec![0], &mut vec![0]);
         assert_eq!(next_position, 4);
         assert_eq!(next_program, vec![1101, 100, -1, 4, 99]);
@@ -711,7 +741,7 @@ mod tests {
     fn step_2() {
         let program = vec![1, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50];
         let position = 4;
-        let (next_position, next_program) =
+        let (_, next_position, next_program) =
             step_forward(position, program, &mut vec![0], &mut vec![0]);
         assert_eq!(next_position, 8);
         assert_eq!(
