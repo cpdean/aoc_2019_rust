@@ -1,5 +1,6 @@
 /// day 7, chaining computers together
 use std::fs;
+use std::rc::Rc;
 
 //type Result<T> = ::std::result::Result<T, dyn std::error::Error>;
 
@@ -435,13 +436,15 @@ pub fn find_max_signal(amplifier_software: Vec<i32>) -> i32 {
 }
 
 pub fn find_max_signal_part2(amplifier_software: Vec<i32>) -> i32 {
-    let mut m = 0;
+    let /*mut*/ m = 0;
+    /* todo till i figure out the right thing
     for input_config in input_combinations_part2() {
         let signal = get_amplifier_signal_part2(&amplifier_software, input_config);
         if m < signal {
             m = signal
         }
     }
+    */
     m
 }
 
@@ -493,7 +496,7 @@ pub fn get_amplifier_signal_part1(
 pub fn get_amplifier_signal_part2(
     amplifier_software: &Vec<i32>,
     mut input_config: Vec<i32>,
-) -> i32 {
+) -> usize {
     // now the computers must run in a cycle, processing input from the computer in front of it
     // this is much harder because I have to re-do how halting works, implement blocking, and write
     // what is going to essentially be a scheduler to switch control flow to the next computer in
@@ -513,27 +516,66 @@ pub fn get_amplifier_signal_part2(
     let mut stdin_e = vec![];
     // load initial params
     stdin_a.push(input_config.remove(0));
+    stdin_a.push(0); // amp A has an extra thing added to it
     stdin_b.push(input_config.remove(0));
     stdin_c.push(input_config.remove(0));
     stdin_d.push(input_config.remove(0));
     stdin_e.push(input_config.remove(0));
-    // run amp A
-    let instructions = amplifier_software.clone();
-    stdin_a.push(0);
-    run_program(instructions, &mut stdin_a, &mut stdin_b);
-    // run amp b
-    let instructions = amplifier_software.clone();
-    run_program(instructions, &mut stdin_b, &mut stdin_c);
-    // run amp c
-    let instructions = amplifier_software.clone();
-    run_program(instructions, &mut stdin_c, &mut stdin_d);
-    // run amp d
-    let instructions = amplifier_software.clone();
-    run_program(instructions, &mut stdin_d, &mut stdin_e);
-    // run amp e
-    let instructions = amplifier_software.clone();
-    run_program(instructions, &mut stdin_e, &mut stdin_a);
-    stdin_a.remove(0)
+
+    let stdin_a_ptr = Rc::new(stdin_a);
+    let stdin_b_ptr = Rc::new(stdin_b);
+    let stdin_c_ptr = Rc::new(stdin_c);
+    let stdin_d_ptr = Rc::new(stdin_d);
+    let stdin_e_ptr = Rc::new(stdin_e);
+    let mut schedule_cycle = vec![
+        (
+            InterruptState::Running,
+            amplifier_software.clone(),
+            0,
+            stdin_a_ptr.clone(),
+            stdin_b_ptr.clone(),
+        ),
+        (
+            InterruptState::Running,
+            amplifier_software.clone(),
+            0,
+            stdin_b_ptr.clone(),
+            stdin_c_ptr.clone(),
+        ),
+        (
+            InterruptState::Running,
+            amplifier_software.clone(),
+            0,
+            stdin_c_ptr.clone(),
+            stdin_d_ptr.clone(),
+        ),
+        (
+            InterruptState::Running,
+            amplifier_software.clone(),
+            0,
+            stdin_d_ptr.clone(),
+            stdin_e_ptr.clone(),
+        ),
+        (
+            InterruptState::Running,
+            amplifier_software.clone(),
+            0,
+            stdin_e_ptr.clone(),
+            stdin_a_ptr.clone(),
+        ),
+    ];
+    loop {
+        if schedule_cycle
+            .iter()
+            .all(|(interrupt_state, _, _, _, _)| *interrupt_state == InterruptState::Halted)
+        {
+            break;
+        }
+        let (interrupt_state, p, ix, mut pipe1, mut pipe2) = schedule_cycle.remove(0);
+        let (int, next_ix, next_p) = run_program_interruptable(p, ix, &mut pipe1, &mut pipe2);
+        schedule_cycle.push((int, next_p, next_ix, pipe1, pipe2));
+    }
+    return stdin_a_ptr.len();
 }
 
 pub fn main() -> std::io::Result<()> {
@@ -578,7 +620,7 @@ pub fn step_forward(
 ) -> (InterruptState, usize, Vec<i32>) {
     use Opcode::*;
     let instruction = parse_opcode(program[position]);
-    let interrupt = InterruptState::Running;
+    let mut interrupt = InterruptState::Running;
     let (new_pos, new_state) = match instruction {
         Add(arg1, arg2, _arg3) => {
             let (left, right, destination_pos) = (
@@ -599,10 +641,15 @@ pub fn step_forward(
             (position + 4, program)
         }
         TakeInput => {
-            let the_data = stdin.remove(0);
-            let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
-            program[address] = the_data;
-            (position + 2, program)
+            if stdin.len() == 0 {
+                interrupt = InterruptState::Blocked;
+                (position, program)
+            } else {
+                let the_data = stdin.remove(0);
+                let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
+                program[address] = the_data;
+                (position + 2, program)
+            }
         }
         ReturnInput => {
             let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
@@ -660,6 +707,7 @@ pub fn step_forward(
         }
         Halt => {
             println!("got a stop");
+            interrupt = InterruptState::Halted;
             (position + 4, program)
         }
     };
@@ -690,21 +738,24 @@ pub fn run_program(
 
 pub fn run_program_interruptable(
     mut program: Vec<i32>,
+    position: usize,
     mut stdin: &mut Vec<i32>,
     mut stdout: &mut Vec<i32>,
-) -> (InterruptState, Vec<i32>) {
+) -> (InterruptState, usize, Vec<i32>) {
     let mut counter = 0;
-    let mut position = 0;
     loop {
         let peek_instr = program[position as usize];
         if peek_instr == 99 {
-            return (InterruptState::Halted, program);
+            return (InterruptState::Halted, position, program);
         } else if counter > 1000 {
             panic!("infinite loop?");
         } else {
-            let (interrupt, i, s) = step_forward(position, program, &mut stdin, &mut stdout);
-            position = i;
-            program = s;
+            let (interrupt, position, p) =
+                step_forward(position, program.clone(), &mut stdin, &mut stdout);
+            if interrupt == InterruptState::Blocked {
+                return (interrupt, position, program);
+            }
+            program = p;
             counter += 1;
         }
     }
