@@ -508,6 +508,7 @@ pub fn get_amplifier_signal_part2(
     //
     // additionally I cannot re-use the stdin/stdout pipes, i have to make a pipe for each
     // connection
+    use std::cell::RefCell;
 
     let mut stdin_a = vec![];
     let mut stdin_b = vec![];
@@ -522,60 +523,83 @@ pub fn get_amplifier_signal_part2(
     stdin_d.push(input_config.remove(0));
     stdin_e.push(input_config.remove(0));
 
-    let stdin_a_ptr = Rc::new(stdin_a);
-    let stdin_b_ptr = Rc::new(stdin_b);
-    let stdin_c_ptr = Rc::new(stdin_c);
-    let stdin_d_ptr = Rc::new(stdin_d);
-    let stdin_e_ptr = Rc::new(stdin_e);
+    let stdin_a_ptr = RefCell::new(stdin_a);
+    let stdin_b_ptr = RefCell::new(stdin_b);
+    let stdin_c_ptr = RefCell::new(stdin_c);
+    let stdin_d_ptr = RefCell::new(stdin_d);
+    let stdin_e_ptr = RefCell::new(stdin_e);
     let mut schedule_cycle = vec![
         (
-            InterruptState::Running,
+            (InterruptState::Running, "A"),
             amplifier_software.clone(),
             0,
-            stdin_a_ptr.clone(),
-            stdin_b_ptr.clone(),
+            &stdin_a_ptr,
+            &stdin_b_ptr,
         ),
         (
-            InterruptState::Running,
+            (InterruptState::Running, "B"),
             amplifier_software.clone(),
             0,
-            stdin_b_ptr.clone(),
-            stdin_c_ptr.clone(),
+            &stdin_b_ptr,
+            &stdin_c_ptr,
         ),
         (
-            InterruptState::Running,
+            (InterruptState::Running, "C"),
             amplifier_software.clone(),
             0,
-            stdin_c_ptr.clone(),
-            stdin_d_ptr.clone(),
+            &stdin_c_ptr,
+            &stdin_d_ptr,
         ),
         (
-            InterruptState::Running,
+            (InterruptState::Running, "D"),
             amplifier_software.clone(),
             0,
-            stdin_d_ptr.clone(),
-            stdin_e_ptr.clone(),
+            &stdin_d_ptr,
+            &stdin_e_ptr,
         ),
         (
-            InterruptState::Running,
+            (InterruptState::Running, "E"),
             amplifier_software.clone(),
             0,
-            stdin_e_ptr.clone(),
-            stdin_a_ptr.clone(),
+            &stdin_e_ptr,
+            &stdin_a_ptr,
         ),
     ];
+
+    let mut global_clock = 0;
     loop {
         if schedule_cycle
             .iter()
-            .all(|(interrupt_state, _, _, _, _)| *interrupt_state == InterruptState::Halted)
+            .all(|((interrupt_state, _), _, _, _, _)| *interrupt_state == InterruptState::Halted)
         {
             break;
+        } else {
+            let status: Vec<(&InterruptState, &&str, &&RefCell<Vec<i32>>)> = schedule_cycle
+                .iter()
+                .map(|((i, n), _, _, _, out)| (i, n, out))
+                .collect();
+            //dbg!(status);
         }
-        let (interrupt_state, p, ix, mut pipe1, mut pipe2) = schedule_cycle.remove(0);
-        let (int, next_ix, next_p) = run_program_interruptable(p, ix, &mut pipe1, &mut pipe2);
-        schedule_cycle.push((int, next_p, next_ix, pipe1, pipe2));
+        let ((interrupt_state, n), p, ix, pipe1, pipe2) = schedule_cycle.remove(0);
+        //dbg!("running the program {}", &n);
+        let (int, next_ix, next_p) =
+            run_program_interruptable(p, ix, &mut pipe1.borrow_mut(), &mut pipe2.borrow_mut());
+        schedule_cycle.push(((int, n), next_p, next_ix, pipe1, pipe2));
+        if global_clock < 2000 {
+            let status: Vec<(&InterruptState, &&str, &&RefCell<Vec<i32>>)> = schedule_cycle
+                .iter()
+                .map(|((i, n), _, _, _, out)| (i, n, out))
+                .collect();
+            dbg!(status);
+            global_clock += 1;
+        } else {
+            dbg!(&global_clock);
+            break;
+        }
     }
-    return stdin_a_ptr.len();
+    dbg!(&global_clock);
+    dbg!("actually returned");
+    return stdin_a_ptr.borrow()[0] as usize;
 }
 
 pub fn main() -> std::io::Result<()> {
@@ -641,17 +665,23 @@ pub fn step_forward(
             (position + 4, program)
         }
         TakeInput => {
+            //dbg!("running a TakeInput");
+            //dbg!(&stdin);
             if stdin.len() == 0 {
                 interrupt = InterruptState::Blocked;
                 (position, program)
             } else {
                 let the_data = stdin.remove(0);
                 let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
+                //dbg!("got input, saving input");
+                //dbg!(&the_data);
+                //dbg!(program[address]);
                 program[address] = the_data;
                 (position + 2, program)
             }
         }
         ReturnInput => {
+            //dbg!("writing data to pipe");
             let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
             let the_data = program[address];
             stdout.push(the_data);
@@ -738,10 +768,13 @@ pub fn run_program(
 
 pub fn run_program_interruptable(
     mut program: Vec<i32>,
-    position: usize,
+    mut position: usize,
     mut stdin: &mut Vec<i32>,
     mut stdout: &mut Vec<i32>,
 ) -> (InterruptState, usize, Vec<i32>) {
+    //dbg!("resuming program");
+    //dbg!(&program);
+    //dbg!(&stdin);
     let mut counter = 0;
     loop {
         let peek_instr = program[position as usize];
@@ -750,11 +783,13 @@ pub fn run_program_interruptable(
         } else if counter > 1000 {
             panic!("infinite loop?");
         } else {
-            let (interrupt, position, p) =
+            let (interrupt, pos, p) =
                 step_forward(position, program.clone(), &mut stdin, &mut stdout);
             if interrupt == InterruptState::Blocked {
-                return (interrupt, position, program);
+                //dbg!("program is now blocked on io");
+                return (interrupt, pos, p);
             }
+            position = pos;
             program = p;
             counter += 1;
         }
@@ -1011,6 +1046,6 @@ mod tests {
         let input_config = vec![9, 8, 7, 6, 5];
         let instructions = input_state.clone();
         let signal = get_amplifier_signal_part2(&instructions, input_config);
-        assert_eq!(signal, 65210);
+        assert_eq!(signal, 139629729);
     }
 }
