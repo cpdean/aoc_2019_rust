@@ -436,15 +436,13 @@ pub fn find_max_signal(amplifier_software: Vec<i32>) -> i32 {
 }
 
 pub fn find_max_signal_part2(amplifier_software: Vec<i32>) -> i32 {
-    let /*mut*/ m = 0;
-    /* todo till i figure out the right thing
+    let mut m = 0;
     for input_config in input_combinations_part2() {
         let signal = get_amplifier_signal_part2(&amplifier_software, input_config);
         if m < signal {
             m = signal
         }
     }
-    */
     m
 }
 
@@ -496,7 +494,7 @@ pub fn get_amplifier_signal_part1(
 pub fn get_amplifier_signal_part2(
     amplifier_software: &Vec<i32>,
     mut input_config: Vec<i32>,
-) -> usize {
+) -> i32 {
     // now the computers must run in a cycle, processing input from the computer in front of it
     // this is much harder because I have to re-do how halting works, implement blocking, and write
     // what is going to essentially be a scheduler to switch control flow to the next computer in
@@ -590,16 +588,16 @@ pub fn get_amplifier_signal_part2(
                 .iter()
                 .map(|((i, n), _, _, _, out)| (i, n, out))
                 .collect();
-            dbg!(status);
+            //dbg!(status);
             global_clock += 1;
         } else {
-            dbg!(&global_clock);
+            //dbg!(&global_clock);
             break;
         }
     }
-    dbg!(&global_clock);
-    dbg!("actually returned");
-    return stdin_a_ptr.borrow()[0] as usize;
+    //dbg!(&global_clock);
+    //dbg!("actually returned");
+    return stdin_a_ptr.borrow()[0];
 }
 
 pub fn main() -> std::io::Result<()> {
@@ -615,9 +613,10 @@ pub fn main() -> std::io::Result<()> {
             i
         })
         .collect();
-    let instructions = input_state.clone();
-    let pt_1_max = find_max_signal(instructions);
+    let pt_1_max = find_max_signal(input_state.clone());
     dbg!(pt_1_max);
+    let part2_max = find_max_signal_part2(input_state.clone());
+    dbg!(part2_max);
     Ok(())
 }
 
@@ -1047,5 +1046,28 @@ mod tests {
         let instructions = input_state.clone();
         let signal = get_amplifier_signal_part2(&instructions, input_config);
         assert_eq!(signal, 139629729);
+    }
+
+    #[test]
+    fn test_part2_example1_find_max() {
+        let instructions: Vec<i32> = vec![
+            3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26, 27, 4, 27, 1001, 28, -1,
+            28, 1005, 28, 6, 99, 0, 0, 5,
+        ];
+        //let input_config = vec![9, 8, 7, 6, 5];
+        let signal = find_max_signal_part2(instructions);
+        assert_eq!(signal, 139629729);
+    }
+
+    #[test]
+    fn test_part2_example2_find_max() {
+        let instructions: Vec<i32> = vec![
+            3, 52, 1001, 52, -5, 52, 3, 53, 1, 52, 56, 54, 1007, 54, 5, 55, 1005, 55, 26, 1001, 54,
+            -5, 54, 1105, 1, 12, 1, 53, 54, 53, 1008, 54, 0, 55, 1001, 55, 1, 55, 2, 53, 55, 53, 4,
+            53, 1001, 56, -1, 56, 1005, 56, 6, 99, 0, 0, 0, 0, 10,
+        ];
+        //let input_config = vec![9, 8, 7, 6, 5];
+        let signal = find_max_signal_part2(instructions);
+        assert_eq!(signal, 18216);
     }
 }
