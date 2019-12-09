@@ -720,14 +720,8 @@ pub fn step_forward(
             }
             (position + 4, relative_base, program)
         }
-        AdjustRelativeBase(_) => {
-            let base_adjustment = get_val(
-                position + 1,
-                relative_base,
-                ParameterMode::Immediate,
-                &program,
-                false,
-            );
+        AdjustRelativeBase(a) => {
+            let base_adjustment = get_val(position + 1, relative_base, a, &program, false);
             (position + 2, relative_base + base_adjustment, program)
         }
         Halt => {
