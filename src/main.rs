@@ -546,10 +546,8 @@ pub fn get_amplifier_signal_part2(
                 .iter()
                 .map(|((i, n), _, _, _, out)| (i, n, out))
                 .collect();
-            //dbg!(status);
         }
         let ((_interrupt_state, n), p, ix, pipe1, pipe2) = schedule_cycle.remove(0);
-        //dbg!("running the program {}", &n);
         let (int, next_ix, next_p) =
             run_program_interruptable(p, ix, &mut pipe1.borrow_mut(), &mut pipe2.borrow_mut());
         schedule_cycle.push(((int, n), next_p, next_ix, pipe1, pipe2));
@@ -558,15 +556,11 @@ pub fn get_amplifier_signal_part2(
                 .iter()
                 .map(|((i, n), _, _, _, out)| (i, n, out))
                 .collect();
-            //dbg!(status);
             global_clock += 1;
         } else {
-            //dbg!(&global_clock);
             break;
         }
     }
-    //dbg!(&global_clock);
-    //dbg!("actually returned");
     return stdin_a_ptr.borrow()[0];
 }
 
@@ -589,10 +583,6 @@ pub fn main() -> std::io::Result<()> {
     let _final_state = run_program(instructions, &mut stdin, &mut stdout);
     dbg!(stdout);
     dbg!(stdin);
-    //let pt_1_max = find_max_signal(input_state.clone());
-    //dbg!(pt_1_max);
-    //let part2_max = find_max_signal_part2(input_state.clone());
-    //dbg!(part2_max);
     Ok(())
 }
 
@@ -612,7 +602,6 @@ fn get_val(
     dont_deref: bool,
 ) -> i64 {
     let a = wrap_pos(position, program.len() - 1);
-    dbg!(relative_base);
     if dont_deref {
         match _mode {
             ParameterMode::Immediate => program[a], // eh
@@ -640,10 +629,6 @@ pub fn step_forward(
     use Opcode::*;
     let instruction = parse_opcode(program[position]);
     let mut interrupt = InterruptState::Running;
-    dbg!((
-        relative_base,
-        &program[position..(position + 4).min(program.len())]
-    ));
     let (new_pos, new_rel_base, new_state) = match instruction {
         Add(arg1, arg2, arg3) => {
             let (left, right, destination_pos) = (
@@ -675,10 +660,8 @@ pub fn step_forward(
             }
         }
         ReturnInput(return_input_mode) => {
-            //dbg!("writing data to pipe");
             //let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
             //let the_data = program[address];
-            dbg!(&return_input_mode);
             let the_data = get_val(
                 position + 1,
                 relative_base,
@@ -775,7 +758,6 @@ pub fn run_program(
         program.push(0);
     }
     loop {
-        dbg!(&counter);
         let peek_instr = program[position as usize];
         if peek_instr == 99 {
             return program;
@@ -798,9 +780,6 @@ pub fn run_program_interruptable(
     mut stdin: &mut Vec<i64>,
     mut stdout: &mut Vec<i64>,
 ) -> (InterruptState, usize, Vec<i64>) {
-    //dbg!("resuming program");
-    //dbg!(&program);
-    //dbg!(&stdin);
     let mut counter = 0;
     loop {
         let peek_instr = program[position as usize];
@@ -812,7 +791,6 @@ pub fn run_program_interruptable(
             let (interrupt, pos, _next_base, p) =
                 step_forward(position, program.clone(), 0, &mut stdin, &mut stdout);
             if interrupt == InterruptState::Blocked {
-                //dbg!("program is now blocked on io");
                 return (interrupt, pos, p);
             }
             position = pos;
@@ -1036,14 +1014,6 @@ mod tests {
         let instructions = input_state.clone();
         let signal = get_amplifier_signal_part1(&instructions, input_config);
         assert_eq!(signal < 54321, true);
-    }
-
-    #[test]
-    fn test_find_max_of_example2() {
-        let input_state: Vec<i64> = vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0];
-        let instructions = input_state.clone();
-        let signal = find_max_signal(instructions);
-        assert_eq!(signal, 54321);
     }
 
     #[test]
