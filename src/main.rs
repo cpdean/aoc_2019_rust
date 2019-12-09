@@ -588,6 +588,7 @@ pub fn main() -> std::io::Result<()> {
     let mut stdout = vec![];
     let _final_state = run_program(instructions, &mut stdin, &mut stdout);
     dbg!(stdout);
+    dbg!(stdin);
     //let pt_1_max = find_max_signal(input_state.clone());
     //dbg!(pt_1_max);
     //let part2_max = find_max_signal_part2(input_state.clone());
@@ -662,13 +663,13 @@ pub fn step_forward(
             program[destination_pos] = left * right;
             (position + 4, relative_base, program)
         }
-        TakeInput(_arg1) => {
+        TakeInput(arg1) => {
             if stdin.len() == 0 {
                 interrupt = InterruptState::Blocked;
                 (position, relative_base, program)
             } else {
                 let the_data = stdin.remove(0);
-                let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
+                let address = get_val(position + 1, relative_base, arg1, &program, true) as usize;
                 program[address] = the_data;
                 (position + 2, relative_base, program)
             }
@@ -1038,7 +1039,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_find_max_of_example2() {
         let input_state: Vec<i64> = vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0];
         let instructions = input_state.clone();
@@ -1154,5 +1154,51 @@ mod tests {
         let mut stdout = vec![];
         run_program(instructions, &mut stdin, &mut stdout);
         assert_eq!(stdout[0], 2); // probably right
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_BOOST_said_203_was_bad_check_zero_relative() {
+        // 203 means, take input and put it at `ix` where `ix` is adjusted
+        let input_state: Vec<i64> = vec![9, 0, 203, 5, 104, 3, 99];
+        let instructions = input_state.clone();
+        let mut stdin = vec![8];
+        let mut stdout = vec![];
+        run_program(instructions, &mut stdin, &mut stdout);
+        assert_eq!(stdout[0], 8);
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_BOOST_said_203_was_bad_check_negative_relative() {
+        // 203 means, take input and put it at `ix` where `ix` is adjusted
+        let input_state: Vec<i64> = vec![9, -4, 203, 9, 104, 3, 99];
+        let instructions = input_state.clone();
+        let mut stdin = vec![8];
+        let mut stdout = vec![];
+        dbg!(&run_program(instructions, &mut stdin, &mut stdout)[0..10]);
+        assert_eq!(stdout[0], 8);
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_BOOST_said_203_was_bad_check_zero_param() {
+        // 203 means, take input and put it at `ix` where `ix` is adjusted
+        let input_state: Vec<i64> = vec![9, -5, 3, 5, 104, 3, 99];
+        let instructions = input_state.clone();
+        let mut stdin = vec![8];
+        let mut stdout = vec![];
+        dbg!(&run_program(instructions, &mut stdin, &mut stdout)[0..10]);
+        assert_eq!(stdout[0], 8);
+    }
+
+    #[test]
+    fn test_from_frank() {
+        let input_state: Vec<i64> = vec![9, 1, 203, 4, 99];
+        let instructions = input_state.clone();
+        let mut stdin = vec![888];
+        let mut stdout = vec![];
+        let halt_state = run_program(instructions, &mut stdin, &mut stdout);
+        assert_eq!(halt_state[5], 888);
     }
 }
