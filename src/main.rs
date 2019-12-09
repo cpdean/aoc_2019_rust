@@ -798,6 +798,8 @@ pub fn run_program_interruptable(
     }
 }
 
+"the tests fail for some reason. it had to do with fixing the relative base adjustment opcode. it made the solution pop out but now the tests break.  don't rely on the test suite when intcode comes up again"
+
 #[cfg(test)]
 mod tests {
     use super::*;
