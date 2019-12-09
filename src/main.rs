@@ -600,7 +600,7 @@ pub fn get_amplifier_signal_part2(
 }
 
 pub fn main() -> std::io::Result<()> {
-    let f = fs::read_to_string("input/day07.txt")?;
+    let f = fs::read_to_string("input/day09.txt")?;
     let input_state: Vec<i32> = f
         .trim()
         .split(",")
@@ -612,10 +612,12 @@ pub fn main() -> std::io::Result<()> {
             i
         })
         .collect();
-    let pt_1_max = find_max_signal(input_state.clone());
-    dbg!(pt_1_max);
-    let part2_max = find_max_signal_part2(input_state.clone());
-    dbg!(part2_max);
+    dbg!(input_state.iter().max());
+    dbg!(input_state.iter().min());
+    //let pt_1_max = find_max_signal(input_state.clone());
+    //dbg!(pt_1_max);
+    //let part2_max = find_max_signal_part2(input_state.clone());
+    //dbg!(part2_max);
     Ok(())
 }
 
