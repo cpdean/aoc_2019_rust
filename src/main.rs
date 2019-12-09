@@ -27,6 +27,7 @@ pub enum Opcode {
     JumpIfFalse(ParameterMode, ParameterMode),
     LessThan(ParameterMode, ParameterMode, ParameterMode),
     Equals(ParameterMode, ParameterMode, ParameterMode),
+    AdjustRelativeBase(ParameterMode),
     Halt,
 }
 
@@ -39,6 +40,7 @@ pub enum InstructionClass {
     JumpIfFalse,
     LessThan,
     Equals,
+    AdjustRelativeBase,
     Halt,
 }
 
@@ -63,7 +65,7 @@ fn param_mode_of_arg(instruction: i64, arg_number: usize) -> ParameterMode {
 
 pub fn parse_opcode(instruction: i64) -> Opcode {
     use Opcode::*;
-    let inst_class = match instruction % 10 {
+    let inst_class = match instruction % 100 {
         1 => InstructionClass::Add,
         2 => InstructionClass::Mult,
         3 => InstructionClass::TakeInput,
@@ -72,7 +74,8 @@ pub fn parse_opcode(instruction: i64) -> Opcode {
         6 => InstructionClass::JumpIfFalse,
         7 => InstructionClass::LessThan,
         8 => InstructionClass::Equals,
-        9 => InstructionClass::Halt, // should be 99 but oh well
+        9 => InstructionClass::AdjustRelativeBase,
+        99 => InstructionClass::Halt,
         x => {
             panic!("got a {:?}, from {:?}", x, instruction);
         }
@@ -120,6 +123,10 @@ pub fn parse_opcode(instruction: i64) -> Opcode {
             let second_param = param_mode_of_arg(instruction, 2);
             let third_param = param_mode_of_arg(instruction, 3);
             Equals(first_param, second_param, third_param)
+        }
+        InstructionClass::AdjustRelativeBase => {
+            let first_param = param_mode_of_arg(instruction, 1);
+            AdjustRelativeBase(first_param)
         }
     }
 }
@@ -592,10 +599,11 @@ fn wrap_pos(try_pos: usize, length: usize) -> usize {
 
 fn get_val(position: usize, relative_base: i64, _mode: ParameterMode, program: &Vec<i64>) -> i64 {
     let a = wrap_pos(position, program.len() - 1);
+    dbg!(relative_base);
     match _mode {
         ParameterMode::Immediate => program[a],
         ParameterMode::Position => program[program[a] as usize],
-        ParameterMode::Relative => program[(relative_base + program[a]) as usize],
+        ParameterMode::Relative => program[(dbg!(relative_base + program[a])) as usize],
     }
 }
 
@@ -640,7 +648,7 @@ pub fn step_forward(
             program[destination_pos] = left * right;
             (position + 4, relative_base, program)
         }
-        TakeInput(arg1) => {
+        TakeInput(_arg1) => {
             if stdin.len() == 0 {
                 interrupt = InterruptState::Blocked;
                 (position, relative_base, program)
@@ -717,6 +725,15 @@ pub fn step_forward(
                 program[destination_pos] = 0;
             }
             (position + 4, relative_base, program)
+        }
+        AdjustRelativeBase(_) => {
+            let base_adjustment = get_val(
+                position + 1,
+                relative_base,
+                ParameterMode::Immediate,
+                &program,
+            );
+            (position + 2, relative_base + base_adjustment, program)
         }
         Halt => {
             println!("got a stop");
@@ -1053,6 +1070,16 @@ mod tests {
     #[test]
     fn test_try_position_return() {
         let input_state: Vec<i64> = vec![4, 2, 99];
+        let instructions = input_state.clone();
+        let mut stdin = vec![];
+        let mut stdout = vec![];
+        run_program(instructions, &mut stdin, &mut stdout);
+        assert_eq!(stdout[0], 99);
+    }
+
+    #[test]
+    fn test_adjust_base() {
+        let input_state: Vec<i64> = vec![109, 10, 204, -6, 99];
         let instructions = input_state.clone();
         let mut stdin = vec![];
         let mut stdout = vec![];
