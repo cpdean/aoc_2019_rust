@@ -41,7 +41,7 @@ pub enum InstructionClass {
     Halt,
 }
 
-pub fn parse_opcode(instruction: i32) -> Opcode {
+pub fn parse_opcode(instruction: i64) -> Opcode {
     use Opcode::*;
     use ParameterMode::*;
     let inst_class = match instruction % 10 {
@@ -163,7 +163,7 @@ pub fn parse_opcode(instruction: i32) -> Opcode {
     }
 }
 
-pub fn input_combinations_part2() -> Vec<Vec<i32>> {
+pub fn input_combinations_part2() -> Vec<Vec<i64>> {
     vec![
         vec![5, 6, 7, 8, 9],
         vec![5, 6, 7, 9, 8],
@@ -288,7 +288,7 @@ pub fn input_combinations_part2() -> Vec<Vec<i32>> {
     ]
 }
 
-pub fn input_combinations_part1() -> Vec<Vec<i32>> {
+pub fn input_combinations_part1() -> Vec<Vec<i64>> {
     /* I didn't want to figure out how to translate a permutation alg to rust because of its
      * memory issues. generated this source code from a python script lol:
      *
@@ -423,7 +423,7 @@ pub fn input_combinations_part1() -> Vec<Vec<i32>> {
     ]
 }
 
-pub fn find_max_signal(amplifier_software: Vec<i32>) -> i32 {
+pub fn find_max_signal(amplifier_software: Vec<i64>) -> i64 {
     let mut m = 0;
     for input_config in input_combinations_part1() {
         let signal = get_amplifier_signal_part1(&amplifier_software, input_config);
@@ -434,7 +434,7 @@ pub fn find_max_signal(amplifier_software: Vec<i32>) -> i32 {
     m
 }
 
-pub fn find_max_signal_part2(amplifier_software: Vec<i32>) -> i32 {
+pub fn find_max_signal_part2(amplifier_software: Vec<i64>) -> i64 {
     let mut m = 0;
     for input_config in input_combinations_part2() {
         let signal = get_amplifier_signal_part2(&amplifier_software, input_config);
@@ -446,13 +446,13 @@ pub fn find_max_signal_part2(amplifier_software: Vec<i32>) -> i32 {
 }
 
 pub fn get_amplifier_signal_part1(
-    amplifier_software: &Vec<i32>,
-    mut input_config: Vec<i32>,
-) -> i32 {
+    amplifier_software: &Vec<i64>,
+    mut input_config: Vec<i64>,
+) -> i64 {
     // works by chaining several computers together, feeding each one an input plus a second
     // number you get from the previous computer
 
-    // A->B->C->D->E-> {i32}
+    // A->B->C->D->E-> {i64}
     assert_eq!(input_config.len(), 5);
 
     let mut stdin = vec![];
@@ -491,15 +491,15 @@ pub fn get_amplifier_signal_part1(
 }
 
 pub fn get_amplifier_signal_part2(
-    amplifier_software: &Vec<i32>,
-    mut input_config: Vec<i32>,
-) -> i32 {
+    amplifier_software: &Vec<i64>,
+    mut input_config: Vec<i64>,
+) -> i64 {
     // now the computers must run in a cycle, processing input from the computer in front of it
     // this is much harder because I have to re-do how halting works, implement blocking, and write
     // what is going to essentially be a scheduler to switch control flow to the next computer in
     // the ring
 
-    // A->B->C->D->E->-+(when halts...)--> {i32}
+    // A->B->C->D->E->-+(when halts...)--> {i64}
     // ^               |
     // +-------<-------+
     //
@@ -571,7 +571,7 @@ pub fn get_amplifier_signal_part2(
         {
             break;
         } else {
-            let _status: Vec<(&InterruptState, &&str, &&RefCell<Vec<i32>>)> = schedule_cycle
+            let _status: Vec<(&InterruptState, &&str, &&RefCell<Vec<i64>>)> = schedule_cycle
                 .iter()
                 .map(|((i, n), _, _, _, out)| (i, n, out))
                 .collect();
@@ -583,7 +583,7 @@ pub fn get_amplifier_signal_part2(
             run_program_interruptable(p, ix, &mut pipe1.borrow_mut(), &mut pipe2.borrow_mut());
         schedule_cycle.push(((int, n), next_p, next_ix, pipe1, pipe2));
         if global_clock < 2000 {
-            let _status: Vec<(&InterruptState, &&str, &&RefCell<Vec<i32>>)> = schedule_cycle
+            let _status: Vec<(&InterruptState, &&str, &&RefCell<Vec<i64>>)> = schedule_cycle
                 .iter()
                 .map(|((i, n), _, _, _, out)| (i, n, out))
                 .collect();
@@ -601,11 +601,11 @@ pub fn get_amplifier_signal_part2(
 
 pub fn main() -> std::io::Result<()> {
     let f = fs::read_to_string("input/day09.txt")?;
-    let input_state: Vec<i32> = f
+    let input_state: Vec<i64> = f
         .trim()
         .split(",")
         .map(|e| {
-            let i: i32 = match e.parse() {
+            let i: i64 = match e.parse() {
                 Ok(x) => x,
                 Err(error) => panic!("what is this <{}>", error),
             };
@@ -628,7 +628,7 @@ fn wrap_pos(try_pos: usize, length: usize) -> usize {
         try_pos
     }
 }
-fn get_val(position: usize, _mode: ParameterMode, program: &Vec<i32>) -> i32 {
+fn get_val(position: usize, _mode: ParameterMode, program: &Vec<i64>) -> i64 {
     let a = wrap_pos(position, program.len() - 1);
     match _mode {
         ParameterMode::Immediate => program[a],
@@ -638,10 +638,10 @@ fn get_val(position: usize, _mode: ParameterMode, program: &Vec<i32>) -> i32 {
 
 pub fn step_forward(
     position: usize,
-    mut program: Vec<i32>,
-    stdin: &mut Vec<i32>,
-    stdout: &mut Vec<i32>,
-) -> (InterruptState, usize, Vec<i32>) {
+    mut program: Vec<i64>,
+    stdin: &mut Vec<i64>,
+    stdout: &mut Vec<i64>,
+) -> (InterruptState, usize, Vec<i64>) {
     use Opcode::*;
     let instruction = parse_opcode(program[position]);
     let mut interrupt = InterruptState::Running;
@@ -745,10 +745,10 @@ pub fn step_forward(
 }
 
 pub fn run_program(
-    mut program: Vec<i32>,
-    mut stdin: &mut Vec<i32>,
-    mut stdout: &mut Vec<i32>,
-) -> Vec<i32> {
+    mut program: Vec<i64>,
+    mut stdin: &mut Vec<i64>,
+    mut stdout: &mut Vec<i64>,
+) -> Vec<i64> {
     let mut counter = 0;
     let mut position = 0;
     loop {
@@ -767,11 +767,11 @@ pub fn run_program(
 }
 
 pub fn run_program_interruptable(
-    mut program: Vec<i32>,
+    mut program: Vec<i64>,
     mut position: usize,
-    mut stdin: &mut Vec<i32>,
-    mut stdout: &mut Vec<i32>,
-) -> (InterruptState, usize, Vec<i32>) {
+    mut stdin: &mut Vec<i64>,
+    mut stdout: &mut Vec<i64>,
+) -> (InterruptState, usize, Vec<i64>) {
     //dbg!("resuming program");
     //dbg!(&program);
     //dbg!(&stdin);
@@ -921,11 +921,11 @@ mod tests {
     #[test]
     fn test_input_consume_removes_item() {
         let f = fs::read_to_string("input/day05.txt").unwrap();
-        let input_state: Vec<i32> = f
+        let input_state: Vec<i64> = f
             .trim()
             .split(",")
             .map(|e| {
-                let i: i32 = match e.parse() {
+                let i: i64 = match e.parse() {
                     Ok(x) => x,
                     Err(error) => panic!("what is this <{}>", error),
                 };
@@ -944,11 +944,11 @@ mod tests {
     #[test]
     fn test_input_consume_removes_item2() {
         let f = fs::read_to_string("input/day05.txt").unwrap();
-        let input_state: Vec<i32> = f
+        let input_state: Vec<i64> = f
             .trim()
             .split(",")
             .map(|e| {
-                let i: i32 = match e.parse() {
+                let i: i64 = match e.parse() {
                     Ok(x) => x,
                     Err(error) => panic!("what is this <{}>", error),
                 };
@@ -965,10 +965,10 @@ mod tests {
 
     #[test]
     fn test_amplifier_checker_example1() {
-        let input_state: Vec<i32> = vec![
+        let input_state: Vec<i64> = vec![
             3, 15, 3, 16, 1002, 16, 10, 16, 1, 16, 15, 15, 4, 15, 99, 0, 0,
         ];
-        let input_config: Vec<i32> = vec![4, 3, 2, 1, 0];
+        let input_config: Vec<i64> = vec![4, 3, 2, 1, 0];
         let instructions = input_state.clone();
         let signal = get_amplifier_signal_part1(&instructions, input_config);
         assert_eq!(signal, 43210);
@@ -976,10 +976,10 @@ mod tests {
 
     fn _test_amplifier_checker_example1_is_max() {
         // need to figure out combinatorics
-        let input_state: Vec<i32> = vec![
+        let input_state: Vec<i64> = vec![
             3, 15, 3, 16, 1002, 16, 10, 16, 1, 16, 15, 15, 4, 15, 99, 0, 0,
         ];
-        let input_config: Vec<i32> = vec![4, 4, 4, 4, 4];
+        let input_config: Vec<i64> = vec![4, 4, 4, 4, 4];
         let instructions = input_state.clone();
         let signal = get_amplifier_signal_part1(&instructions, input_config);
         assert_eq!(signal, 43210);
@@ -987,11 +987,11 @@ mod tests {
 
     #[test]
     fn test_amplifier_checker_example2() {
-        let input_state: Vec<i32> = vec![
+        let input_state: Vec<i64> = vec![
             3, 23, 3, 24, 1002, 24, 10, 24, 1002, 23, -1, 23, 101, 5, 23, 23, 1, 24, 23, 23, 4, 23,
             99, 0, 0,
         ];
-        let input_config: Vec<i32> = vec![0, 1, 2, 3, 4];
+        let input_config: Vec<i64> = vec![0, 1, 2, 3, 4];
         let instructions = input_state.clone();
         let signal = get_amplifier_signal_part1(&instructions, input_config);
         assert_eq!(signal, 54321);
@@ -999,11 +999,11 @@ mod tests {
 
     #[test]
     fn test_amplifier_checker_example2_probably_max() {
-        let input_state: Vec<i32> = vec![
+        let input_state: Vec<i64> = vec![
             3, 23, 3, 24, 1002, 24, 10, 24, 1002, 23, -1, 23, 101, 5, 23, 23, 1, 24, 23, 23, 4, 23,
             99, 0, 0,
         ];
-        let input_config: Vec<i32> = vec![0, 1, 2, 4, 3];
+        let input_config: Vec<i64> = vec![0, 1, 2, 4, 3];
         let instructions = input_state.clone();
         let signal = get_amplifier_signal_part1(&instructions, input_config);
         assert_eq!(signal < 54321, true);
@@ -1011,10 +1011,7 @@ mod tests {
 
     #[test]
     fn test_find_max_of_example2() {
-        let input_state: Vec<i32> = vec![
-            3, 23, 3, 24, 1002, 24, 10, 24, 1002, 23, -1, 23, 101, 5, 23, 23, 1, 24, 23, 23, 4, 23,
-            99, 0, 0,
-        ];
+        let input_state: Vec<i64> = vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0];
         let instructions = input_state.clone();
         let signal = find_max_signal(instructions);
         assert_eq!(signal, 54321);
@@ -1022,7 +1019,7 @@ mod tests {
 
     #[test]
     fn test_find_max_of_example3() {
-        let input_state: Vec<i32> = vec![
+        let input_state: Vec<i64> = vec![
             3, 31, 3, 32, 1002, 32, 10, 32, 1001, 31, -2, 31, 1007, 31, 0, 33, 1002, 33, 7, 33, 1,
             33, 31, 31, 1, 32, 31, 31, 4, 31, 99, 0, 0, 0,
         ];
@@ -1039,36 +1036,12 @@ mod tests {
 
     #[test]
     fn test_try_thing() {
-        let input_state: Vec<i32> = vec![
-            3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26, 27, 4, 27, 1001, 28, -1,
-            28, 1005, 28, 6, 99, 0, 0, 5,
-        ];
-        let input_config = vec![9, 8, 7, 6, 5];
+        let input_state: Vec<i64> = vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0];
+
         let instructions = input_state.clone();
-        let signal = get_amplifier_signal_part2(&instructions, input_config);
-        assert_eq!(signal, 139629729);
-    }
-
-    #[test]
-    fn test_part2_example1_find_max() {
-        let instructions: Vec<i32> = vec![
-            3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26, 27, 4, 27, 1001, 28, -1,
-            28, 1005, 28, 6, 99, 0, 0, 5,
-        ];
-        //let input_config = vec![9, 8, 7, 6, 5];
-        let signal = find_max_signal_part2(instructions);
-        assert_eq!(signal, 139629729);
-    }
-
-    #[test]
-    fn test_part2_example2_find_max() {
-        let instructions: Vec<i32> = vec![
-            3, 52, 1001, 52, -5, 52, 3, 53, 1, 52, 56, 54, 1007, 54, 5, 55, 1005, 55, 26, 1001, 54,
-            -5, 54, 1105, 1, 12, 1, 53, 54, 53, 1008, 54, 0, 55, 1001, 55, 1, 55, 2, 53, 55, 53, 4,
-            53, 1001, 56, -1, 56, 1005, 56, 6, 99, 0, 0, 0, 0, 10,
-        ];
-        //let input_config = vec![9, 8, 7, 6, 5];
-        let signal = find_max_signal_part2(instructions);
-        assert_eq!(signal, 18216);
+        let mut stdin = vec![];
+        let mut stdout = vec![];
+        run_program(instructions, &mut stdin, &mut stdout);
+        assert_eq!(stdout[0], 1219070632396864); // probably right
     }
 }
