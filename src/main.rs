@@ -7,6 +7,7 @@ use std::fs;
 pub enum ParameterMode {
     Position,
     Immediate,
+    Relative,
 }
 
 #[derive(Debug, PartialEq)]
@@ -41,9 +42,27 @@ pub enum InstructionClass {
     Halt,
 }
 
+fn param_mode_of_arg(instruction: i64, arg_number: usize) -> ParameterMode {
+    use ParameterMode::*;
+    let offset = match arg_number {
+        1 => 100,
+        2 => 1000,
+        3 => 10000,
+        x => panic!("does not support arg number '{}' yet", x),
+    };
+    if instruction / offset % 10 == 0 {
+        Position
+    } else if instruction / offset % 10 == 1 {
+        Immediate
+    } else if instruction / offset % 10 == 2 {
+        Relative
+    } else {
+        panic!("failed on instruction {}", instruction);
+    }
+}
+
 pub fn parse_opcode(instruction: i64) -> Opcode {
     use Opcode::*;
-    use ParameterMode::*;
     let inst_class = match instruction % 10 {
         1 => InstructionClass::Add,
         2 => InstructionClass::Mult,
@@ -60,118 +79,46 @@ pub fn parse_opcode(instruction: i64) -> Opcode {
     };
     match inst_class {
         InstructionClass::Add => {
-            let first_param = if instruction / 100 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
-            let second_param = if instruction / 1000 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
-            let third_param = if instruction / 10000 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
+            let first_param = param_mode_of_arg(instruction, 1);
+            let second_param = param_mode_of_arg(instruction, 2);
+            let third_param = param_mode_of_arg(instruction, 3);
             Add(first_param, second_param, third_param)
         }
         InstructionClass::Mult => {
-            let first_param = if instruction / 100 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
-            let second_param = if instruction / 1000 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
-            let third_param = if instruction / 10000 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
+            let first_param = param_mode_of_arg(instruction, 1);
+            let second_param = param_mode_of_arg(instruction, 2);
+            let third_param = param_mode_of_arg(instruction, 3);
             Mult(first_param, second_param, third_param)
         }
         InstructionClass::Halt => Halt, // should be 99 but oh well
         InstructionClass::TakeInput => {
-            let first_param = if instruction / 100 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
+            let first_param = param_mode_of_arg(instruction, 1);
             TakeInput(first_param)
         }
         InstructionClass::ReturnInput => {
-            let first_param = if instruction / 100 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
+            let first_param = param_mode_of_arg(instruction, 1);
             ReturnInput(first_param)
         }
         InstructionClass::JumpIfTrue => {
-            let first_param = if instruction / 100 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
-            let second_param = if instruction / 1000 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
+            let first_param = param_mode_of_arg(instruction, 1);
+            let second_param = param_mode_of_arg(instruction, 2);
             JumpIfTrue(first_param, second_param)
         }
         InstructionClass::JumpIfFalse => {
-            let first_param = if instruction / 100 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
-            let second_param = if instruction / 1000 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
+            let first_param = param_mode_of_arg(instruction, 1);
+            let second_param = param_mode_of_arg(instruction, 2);
             JumpIfFalse(first_param, second_param)
         }
         InstructionClass::LessThan => {
-            let first_param = if instruction / 100 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
-            let second_param = if instruction / 1000 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
-            let third_param = if instruction / 10000 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
+            let first_param = param_mode_of_arg(instruction, 1);
+            let second_param = param_mode_of_arg(instruction, 2);
+            let third_param = param_mode_of_arg(instruction, 3);
             LessThan(first_param, second_param, third_param)
         }
         InstructionClass::Equals => {
-            let first_param = if instruction / 100 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
-            let second_param = if instruction / 1000 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
-            let third_param = if instruction / 10000 % 10 == 0 {
-                Position
-            } else {
-                Immediate
-            };
+            let first_param = param_mode_of_arg(instruction, 1);
+            let second_param = param_mode_of_arg(instruction, 2);
+            let third_param = param_mode_of_arg(instruction, 3);
             Equals(first_param, second_param, third_param)
         }
     }
@@ -642,56 +589,66 @@ fn wrap_pos(try_pos: usize, length: usize) -> usize {
         try_pos
     }
 }
-fn get_val(position: usize, _mode: ParameterMode, program: &Vec<i64>) -> i64 {
+
+fn get_val(position: usize, relative_base: i64, _mode: ParameterMode, program: &Vec<i64>) -> i64 {
     let a = wrap_pos(position, program.len() - 1);
     match _mode {
         ParameterMode::Immediate => program[a],
         ParameterMode::Position => program[program[a] as usize],
+        ParameterMode::Relative => program[(relative_base + program[a]) as usize],
     }
 }
+
+type ProcessState = (InterruptState, usize, i64, Vec<i64>); // (int, pos, rel, memory)
 
 pub fn step_forward(
     position: usize,
     mut program: Vec<i64>,
+    relative_base: i64,
     stdin: &mut Vec<i64>,
     stdout: &mut Vec<i64>,
-) -> (InterruptState, usize, Vec<i64>) {
+) -> ProcessState {
     use Opcode::*;
     let instruction = parse_opcode(program[position]);
     let mut interrupt = InterruptState::Running;
-    let (new_pos, new_state) = match instruction {
+    let (new_pos, new_rel_base, new_state) = match instruction {
         Add(arg1, arg2, _arg3) => {
             let (left, right, destination_pos) = (
-                get_val(position + 1, arg1, &program),
-                get_val(position + 2, arg2, &program),
-                get_val(position + 3, ParameterMode::Immediate, &program) as usize,
+                get_val(position + 1, relative_base, arg1, &program),
+                get_val(position + 2, relative_base, arg2, &program),
+                get_val(
+                    position + 3,
+                    relative_base,
+                    ParameterMode::Immediate,
+                    &program,
+                ) as usize,
             );
             program[destination_pos] = left + right;
-            (position + 4, program)
+            (position + 4, relative_base, program)
         }
         Mult(arg1, arg2, _arg3) => {
             let (left, right, destination_pos) = (
-                get_val(position + 1, arg1, &program),
-                get_val(position + 2, arg2, &program),
-                get_val(position + 3, ParameterMode::Immediate, &program) as usize,
+                get_val(position + 1, relative_base, arg1, &program),
+                get_val(position + 2, relative_base, arg2, &program),
+                get_val(
+                    position + 3,
+                    relative_base,
+                    ParameterMode::Immediate,
+                    &program,
+                ) as usize,
             );
             program[destination_pos] = left * right;
-            (position + 4, program)
+            (position + 4, relative_base, program)
         }
         TakeInput(arg1) => {
-            //dbg!("running a TakeInput");
-            //dbg!(&stdin);
             if stdin.len() == 0 {
                 interrupt = InterruptState::Blocked;
-                (position, program)
+                (position, relative_base, program)
             } else {
                 let the_data = stdin.remove(0);
                 let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
-                //dbg!("got input, saving input");
-                //dbg!(&the_data);
-                //dbg!(program[address]);
                 program[address] = the_data;
-                (position + 2, program)
+                (position + 2, relative_base, program)
             }
         }
         ReturnInput(return_input_mode) => {
@@ -699,65 +656,80 @@ pub fn step_forward(
             //let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
             //let the_data = program[address];
             dbg!(&return_input_mode);
-            let the_data = get_val(position + 1, return_input_mode, &program);
+            let the_data = get_val(position + 1, relative_base, return_input_mode, &program);
             stdout.push(the_data);
-            (position + 2, program)
+            (position + 2, relative_base, program)
         }
         JumpIfTrue(arg1, arg2) => {
             let (a, b) = (
-                get_val(position + 1, arg1, &program),
-                get_val(position + 2, arg2, &program),
+                get_val(position + 1, relative_base, arg1, &program),
+                get_val(position + 2, relative_base, arg2, &program),
             );
             if a != 0 {
-                (b as usize, program)
+                (b as usize, relative_base, program)
             } else {
-                (position + 3, program)
+                (position + 3, relative_base, program)
             }
         }
         JumpIfFalse(arg1, arg2) => {
             let (a, b) = (
-                get_val(position + 1, arg1, &program),
-                get_val(position + 2, arg2, &program),
+                get_val(position + 1, relative_base, arg1, &program),
+                get_val(position + 2, relative_base, arg2, &program),
             );
             if a == 0 {
-                (b as usize, program)
+                (b as usize, relative_base, program)
             } else {
-                (position + 3, program)
+                (position + 3, relative_base, program)
             }
         }
         LessThan(arg1, arg2, _arg3) => {
             let (left, right, destination_pos) = (
-                get_val(position + 1, arg1, &program),
-                get_val(position + 2, arg2, &program),
-                get_val(position + 3, ParameterMode::Immediate, &program) as usize,
+                get_val(position + 1, relative_base, arg1, &program),
+                get_val(position + 2, relative_base, arg2, &program),
+                get_val(
+                    position + 3,
+                    relative_base,
+                    ParameterMode::Immediate,
+                    &program,
+                ) as usize,
             );
             if left < right {
                 program[destination_pos] = 1;
             } else {
                 program[destination_pos] = 0;
             }
-            (position + 4, program)
+            (position + 4, relative_base, program)
         }
         Equals(arg1, arg2, _arg3) => {
             let (left, right, destination_pos) = (
-                get_val(position + 1, arg1, &program),
-                get_val(position + 2, arg2, &program),
-                get_val(position + 3, ParameterMode::Immediate, &program) as usize,
+                get_val(position + 1, relative_base, arg1, &program),
+                get_val(position + 2, relative_base, arg2, &program),
+                get_val(
+                    position + 3,
+                    relative_base,
+                    ParameterMode::Immediate,
+                    &program,
+                ) as usize,
             );
             if left == right {
                 program[destination_pos] = 1;
             } else {
                 program[destination_pos] = 0;
             }
-            (position + 4, program)
+            (position + 4, relative_base, program)
         }
         Halt => {
             println!("got a stop");
             interrupt = InterruptState::Halted;
-            (position + 4, program)
+            (position + 4, relative_base, program)
         }
     };
-    (interrupt, wrap_pos(new_pos, new_state.len()), new_state)
+    (
+        interrupt,
+        wrap_pos(new_pos, new_state.len()),
+        new_rel_base,
+        new_state,
+    )
 }
 
 pub fn run_program(
@@ -767,15 +739,19 @@ pub fn run_program(
 ) -> Vec<i64> {
     let mut counter = 0;
     let mut position = 0;
+    let mut relative_base = 0;
     loop {
+        dbg!(&counter);
         let peek_instr = program[position as usize];
         if peek_instr == 99 {
             return program;
         } else if counter > 1000 {
             panic!("infinite loop?");
         } else {
-            let (_, i, s) = step_forward(position, program, &mut stdin, &mut stdout);
+            let (_, i, r, s) =
+                step_forward(position, program, relative_base, &mut stdin, &mut stdout);
             position = i;
+            relative_base = r;
             program = s;
             counter += 1;
         }
@@ -799,8 +775,8 @@ pub fn run_program_interruptable(
         } else if counter > 1000 {
             panic!("infinite loop?");
         } else {
-            let (interrupt, pos, p) =
-                step_forward(position, program.clone(), &mut stdin, &mut stdout);
+            let (interrupt, pos, _next_base, p) =
+                step_forward(position, program.clone(), 0, &mut stdin, &mut stdout);
             if interrupt == InterruptState::Blocked {
                 //dbg!("program is now blocked on io");
                 return (interrupt, pos, p);
@@ -820,8 +796,8 @@ mod tests {
     fn it_works() {
         let program = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
         let position = 0;
-        let (_, next_position, next_program) =
-            step_forward(position, program, &mut vec![0], &mut vec![0]);
+        let (_, next_position, _next_base, next_program) =
+            step_forward(position, program, 0, &mut vec![0], &mut vec![0]);
         assert_eq!(next_position, 4);
         assert_eq!(
             next_program,
@@ -833,8 +809,8 @@ mod tests {
     fn it_works2() {
         let program = vec![1101, 100, -1, 4, 0];
         let position = 0;
-        let (_, next_position, next_program) =
-            step_forward(position, program, &mut vec![0], &mut vec![0]);
+        let (_, next_position, _next_base, next_program) =
+            step_forward(position, program, 0, &mut vec![0], &mut vec![0]);
         assert_eq!(next_position, 4);
         assert_eq!(next_program, vec![1101, 100, -1, 4, 99]);
     }
@@ -843,8 +819,8 @@ mod tests {
     fn step_2() {
         let program = vec![1, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50];
         let position = 4;
-        let (_, next_position, next_program) =
-            step_forward(position, program, &mut vec![0], &mut vec![0]);
+        let (_, next_position, _next_base, next_program) =
+            step_forward(position, program, 0, &mut vec![0], &mut vec![0]);
         assert_eq!(next_position, 8);
         assert_eq!(
             next_program,
@@ -930,6 +906,20 @@ mod tests {
                 ParameterMode::Immediate,
                 ParameterMode::Immediate,
                 ParameterMode::Position
+            )
+        );
+    }
+
+    #[test]
+    fn test_mult_parse_param_relative_mode() {
+        // this is actually broken, you can't have an instr param be immediate....
+        let i = parse_opcode(12002);
+        assert_eq!(
+            i,
+            Opcode::Mult(
+                ParameterMode::Position,
+                ParameterMode::Relative,
+                ParameterMode::Immediate
             )
         );
     }
@@ -1038,6 +1028,16 @@ mod tests {
     fn input_combo_works() {
         let i = input_combinations_part1();
         assert_eq!(i.len(), 120);
+    }
+
+    #[test]
+    fn test_try_position_take() {
+        let input_state: Vec<i64> = vec![3, 3, 99, 0];
+        let instructions = input_state.clone();
+        let mut stdin = vec![7];
+        let mut stdout = vec![];
+        let halt_state = run_program(instructions, &mut stdin, &mut stdout);
+        assert_eq!(halt_state[3], 7);
     }
 
     #[test]
