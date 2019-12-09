@@ -20,8 +20,8 @@ pub enum InterruptState {
 pub enum Opcode {
     Mult(ParameterMode, ParameterMode, ParameterMode),
     Add(ParameterMode, ParameterMode, ParameterMode),
-    TakeInput,
-    ReturnInput,
+    TakeInput(ParameterMode),
+    ReturnInput(ParameterMode),
     JumpIfTrue(ParameterMode, ParameterMode),
     JumpIfFalse(ParameterMode, ParameterMode),
     LessThan(ParameterMode, ParameterMode, ParameterMode),
@@ -96,8 +96,22 @@ pub fn parse_opcode(instruction: i64) -> Opcode {
             Mult(first_param, second_param, third_param)
         }
         InstructionClass::Halt => Halt, // should be 99 but oh well
-        InstructionClass::TakeInput => TakeInput,
-        InstructionClass::ReturnInput => ReturnInput,
+        InstructionClass::TakeInput => {
+            let first_param = if instruction / 100 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            TakeInput(first_param)
+        }
+        InstructionClass::ReturnInput => {
+            let first_param = if instruction / 100 % 10 == 0 {
+                Position
+            } else {
+                Immediate
+            };
+            ReturnInput(first_param)
+        }
         InstructionClass::JumpIfTrue => {
             let first_param = if instruction / 100 % 10 == 0 {
                 Position
@@ -664,7 +678,7 @@ pub fn step_forward(
             program[destination_pos] = left * right;
             (position + 4, program)
         }
-        TakeInput => {
+        TakeInput(arg1) => {
             //dbg!("running a TakeInput");
             //dbg!(&stdin);
             if stdin.len() == 0 {
@@ -680,10 +694,12 @@ pub fn step_forward(
                 (position + 2, program)
             }
         }
-        ReturnInput => {
+        ReturnInput(return_input_mode) => {
             //dbg!("writing data to pipe");
-            let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
-            let the_data = program[address];
+            //let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
+            //let the_data = program[address];
+            dbg!(&return_input_mode);
+            let the_data = get_val(position + 1, return_input_mode, &program);
             stdout.push(the_data);
             (position + 2, program)
         }
@@ -974,17 +990,6 @@ mod tests {
         assert_eq!(signal, 43210);
     }
 
-    fn _test_amplifier_checker_example1_is_max() {
-        // need to figure out combinatorics
-        let input_state: Vec<i64> = vec![
-            3, 15, 3, 16, 1002, 16, 10, 16, 1, 16, 15, 15, 4, 15, 99, 0, 0,
-        ];
-        let input_config: Vec<i64> = vec![4, 4, 4, 4, 4];
-        let instructions = input_state.clone();
-        let signal = get_amplifier_signal_part1(&instructions, input_config);
-        assert_eq!(signal, 43210);
-    }
-
     #[test]
     fn test_amplifier_checker_example2() {
         let input_state: Vec<i64> = vec![
@@ -1010,6 +1015,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_find_max_of_example2() {
         let input_state: Vec<i64> = vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0];
         let instructions = input_state.clone();
@@ -1035,13 +1041,42 @@ mod tests {
     }
 
     #[test]
-    fn test_try_thing() {
+    fn test_try_example2() {
         let input_state: Vec<i64> = vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0];
-
         let instructions = input_state.clone();
         let mut stdin = vec![];
         let mut stdout = vec![];
         run_program(instructions, &mut stdin, &mut stdout);
         assert_eq!(stdout[0], 1219070632396864); // probably right
+    }
+
+    #[test]
+    fn test_try_position_return() {
+        let input_state: Vec<i64> = vec![4, 2, 99];
+        let instructions = input_state.clone();
+        let mut stdin = vec![];
+        let mut stdout = vec![];
+        run_program(instructions, &mut stdin, &mut stdout);
+        assert_eq!(stdout[0], 99);
+    }
+
+    #[test]
+    fn test_try_immediate_return() {
+        let input_state: Vec<i64> = vec![104, 2, 99];
+        let instructions = input_state.clone();
+        let mut stdin = vec![];
+        let mut stdout = vec![];
+        run_program(instructions, &mut stdin, &mut stdout);
+        assert_eq!(stdout[0], 2);
+    }
+
+    #[test]
+    fn test_try_example3() {
+        let input_state: Vec<i64> = vec![104, 1125899906842624, 99];
+        let instructions = input_state.clone();
+        let mut stdin = vec![];
+        let mut stdout = vec![];
+        run_program(instructions, &mut stdin, &mut stdout);
+        assert_eq!(stdout[0], 1125899906842624); // probably right
     }
 }
