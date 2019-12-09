@@ -583,8 +583,11 @@ pub fn main() -> std::io::Result<()> {
             i
         })
         .collect();
-    dbg!(input_state.iter().max());
-    dbg!(input_state.iter().min());
+    let instructions = input_state.clone();
+    let mut stdin = vec![1];
+    let mut stdout = vec![];
+    let _final_state = run_program(instructions, &mut stdin, &mut stdout);
+    dbg!(stdout);
     //let pt_1_max = find_max_signal(input_state.clone());
     //dbg!(pt_1_max);
     //let part2_max = find_max_signal_part2(input_state.clone());
@@ -600,13 +603,27 @@ fn wrap_pos(try_pos: usize, length: usize) -> usize {
     }
 }
 
-fn get_val(position: usize, relative_base: i64, _mode: ParameterMode, program: &Vec<i64>) -> i64 {
+fn get_val(
+    position: usize,
+    relative_base: i64,
+    _mode: ParameterMode,
+    program: &Vec<i64>,
+    dont_deref: bool,
+) -> i64 {
     let a = wrap_pos(position, program.len() - 1);
     dbg!(relative_base);
-    match _mode {
-        ParameterMode::Immediate => program[a],
-        ParameterMode::Position => program[program[a] as usize],
-        ParameterMode::Relative => program[(dbg!(relative_base + program[a])) as usize],
+    if dont_deref {
+        match _mode {
+            ParameterMode::Immediate => program[a], // eh
+            ParameterMode::Position => program[a],
+            ParameterMode::Relative => relative_base + program[a],
+        }
+    } else {
+        match _mode {
+            ParameterMode::Immediate => program[a],
+            ParameterMode::Position => program[program[a] as usize],
+            ParameterMode::Relative => program[(relative_base + program[a]) as usize],
+        }
     }
 }
 
@@ -627,30 +644,20 @@ pub fn step_forward(
         &program[position..(position + 4).min(program.len())]
     ));
     let (new_pos, new_rel_base, new_state) = match instruction {
-        Add(arg1, arg2, _arg3) => {
+        Add(arg1, arg2, arg3) => {
             let (left, right, destination_pos) = (
-                get_val(position + 1, relative_base, arg1, &program),
-                get_val(position + 2, relative_base, arg2, &program),
-                get_val(
-                    position + 3,
-                    relative_base,
-                    ParameterMode::Immediate,
-                    &program,
-                ) as usize,
+                get_val(position + 1, relative_base, arg1, &program, false),
+                get_val(position + 2, relative_base, arg2, &program, false),
+                get_val(position + 3, relative_base, arg3, &program, true) as usize,
             );
             program[destination_pos] = left + right;
             (position + 4, relative_base, program)
         }
         Mult(arg1, arg2, _arg3) => {
             let (left, right, destination_pos) = (
-                get_val(position + 1, relative_base, arg1, &program),
-                get_val(position + 2, relative_base, arg2, &program),
-                get_val(
-                    position + 3,
-                    relative_base,
-                    ParameterMode::Immediate,
-                    &program,
-                ) as usize,
+                get_val(position + 1, relative_base, arg1, &program, false),
+                get_val(position + 2, relative_base, arg2, &program, false),
+                get_val(position + 3, relative_base, _arg3, &program, true) as usize,
             );
             program[destination_pos] = left * right;
             (position + 4, relative_base, program)
@@ -671,14 +678,20 @@ pub fn step_forward(
             //let address = program[wrap_pos(position + 1, program.len() - 1) as usize] as usize;
             //let the_data = program[address];
             dbg!(&return_input_mode);
-            let the_data = get_val(position + 1, relative_base, return_input_mode, &program);
+            let the_data = get_val(
+                position + 1,
+                relative_base,
+                return_input_mode,
+                &program,
+                false,
+            );
             stdout.push(the_data);
             (position + 2, relative_base, program)
         }
         JumpIfTrue(arg1, arg2) => {
             let (a, b) = (
-                get_val(position + 1, relative_base, arg1, &program),
-                get_val(position + 2, relative_base, arg2, &program),
+                get_val(position + 1, relative_base, arg1, &program, false),
+                get_val(position + 2, relative_base, arg2, &program, false),
             );
             if a != 0 {
                 (b as usize, relative_base, program)
@@ -688,8 +701,8 @@ pub fn step_forward(
         }
         JumpIfFalse(arg1, arg2) => {
             let (a, b) = (
-                get_val(position + 1, relative_base, arg1, &program),
-                get_val(position + 2, relative_base, arg2, &program),
+                get_val(position + 1, relative_base, arg1, &program, false),
+                get_val(position + 2, relative_base, arg2, &program, false),
             );
             if a == 0 {
                 (b as usize, relative_base, program)
@@ -699,14 +712,9 @@ pub fn step_forward(
         }
         LessThan(arg1, arg2, _arg3) => {
             let (left, right, destination_pos) = (
-                get_val(position + 1, relative_base, arg1, &program),
-                get_val(position + 2, relative_base, arg2, &program),
-                get_val(
-                    position + 3,
-                    relative_base,
-                    ParameterMode::Immediate,
-                    &program,
-                ) as usize,
+                get_val(position + 1, relative_base, arg1, &program, false),
+                get_val(position + 2, relative_base, arg2, &program, false),
+                get_val(position + 3, relative_base, _arg3, &program, true) as usize,
             );
             if left < right {
                 program[destination_pos] = 1;
@@ -717,14 +725,9 @@ pub fn step_forward(
         }
         Equals(arg1, arg2, _arg3) => {
             let (left, right, destination_pos) = (
-                get_val(position + 1, relative_base, arg1, &program),
-                get_val(position + 2, relative_base, arg2, &program),
-                get_val(
-                    position + 3,
-                    relative_base,
-                    ParameterMode::Immediate,
-                    &program,
-                ) as usize,
+                get_val(position + 1, relative_base, arg1, &program, false),
+                get_val(position + 2, relative_base, arg2, &program, false),
+                get_val(position + 3, relative_base, _arg3, &program, true) as usize,
             );
             if left == right {
                 program[destination_pos] = 1;
@@ -739,6 +742,7 @@ pub fn step_forward(
                 relative_base,
                 ParameterMode::Immediate,
                 &program,
+                false,
             );
             (position + 2, relative_base + base_adjustment, program)
         }
@@ -1130,5 +1134,25 @@ mod tests {
         let mut stdout = vec![];
         run_program(instructions, &mut stdin, &mut stdout);
         assert_eq!(stdout[0], 1125899906842624); // probably right
+    }
+
+    #[test]
+    fn test_try_position_add() {
+        let input_state: Vec<i64> = vec![9, 100, 1101, 1, 1, 7, 104, 0, 99];
+        let instructions = input_state.clone();
+        let mut stdin = vec![];
+        let mut stdout = vec![];
+        run_program(instructions, &mut stdin, &mut stdout);
+        assert_eq!(stdout[0], 2); // probably right
+    }
+
+    #[test]
+    fn test_try_relative_add() {
+        let input_state: Vec<i64> = vec![9, -7, 21101, 1, 1, 14, 104, 0, 99];
+        let instructions = input_state.clone();
+        let mut stdin = vec![];
+        let mut stdout = vec![];
+        run_program(instructions, &mut stdin, &mut stdout);
+        assert_eq!(stdout[0], 2); // probably right
     }
 }
