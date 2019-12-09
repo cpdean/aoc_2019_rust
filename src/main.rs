@@ -582,7 +582,11 @@ pub fn main() -> std::io::Result<()> {
     let mut stdout = vec![];
     let _final_state = run_program(instructions, &mut stdin, &mut stdout);
     dbg!(stdout);
-    dbg!(stdin);
+    let instructions = input_state.clone();
+    let mut stdin = vec![2];
+    let mut stdout = vec![];
+    let _final_state = run_program(instructions, &mut stdin, &mut stdout);
+    dbg!(stdout);
     Ok(())
 }
 
@@ -755,7 +759,7 @@ pub fn run_program(
         let peek_instr = program[position as usize];
         if peek_instr == 99 {
             return program;
-        } else if counter > 1000 {
+        } else if counter > 1000000 {
             panic!("infinite loop?");
         } else {
             let (_, i, r, s) =
