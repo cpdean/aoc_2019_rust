@@ -59,7 +59,10 @@ fn param_mode_of_arg(instruction: i64, arg_number: usize) -> ParameterMode {
     } else if instruction / offset % 10 == 2 {
         Relative
     } else {
-        panic!("failed on instruction {}", instruction);
+        panic!(
+            "failed on instruction {}, parsing param mode of arg number '{}'",
+            instruction, arg_number
+        );
     }
 }
 
@@ -619,6 +622,10 @@ pub fn step_forward(
     use Opcode::*;
     let instruction = parse_opcode(program[position]);
     let mut interrupt = InterruptState::Running;
+    dbg!((
+        relative_base,
+        &program[position..(position + 4).min(program.len())]
+    ));
     let (new_pos, new_rel_base, new_state) = match instruction {
         Add(arg1, arg2, _arg3) => {
             let (left, right, destination_pos) = (
@@ -1055,6 +1062,19 @@ mod tests {
         let mut stdout = vec![];
         let halt_state = run_program(instructions, &mut stdin, &mut stdout);
         assert_eq!(halt_state[3], 7);
+    }
+
+    #[test]
+    fn test_try_example1() {
+        let input_state: Vec<i64> = vec![
+            109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
+        ];
+        let instructions = input_state.clone();
+        let mut stdin = vec![];
+        let mut stdout = vec![];
+        run_program(instructions, &mut stdin, &mut stdout);
+        // this is the quine example
+        assert_eq!(stdout, input_state);
     }
 
     #[test]
