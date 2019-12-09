@@ -764,6 +764,11 @@ pub fn run_program(
     let mut counter = 0;
     let mut position = 0;
     let mut relative_base = 0;
+    // lol
+    for _ in 0..10000 {
+        // shoutout to polina
+        program.push(0);
+    }
     loop {
         dbg!(&counter);
         let peek_instr = program[position as usize];
@@ -857,7 +862,7 @@ mod tests {
         let program = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
         let next_program = run_program(program, &mut vec![0], &mut vec![0]);
         assert_eq!(
-            next_program,
+            next_program[0..12].to_vec(),
             vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
         );
     }
