@@ -30,59 +30,30 @@ pub fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn parse_asteroid_field(s: &str) -> Vec<(usize, usize)> {
+pub fn parse_asteroid_field(s: &str) -> Vec<(f64, f64)> {
     let lines = s.trim().split("\n");
     let mut asteroid_positions = vec![];
     for (y, line) in lines.enumerate() {
         for (x, cell) in line.chars().enumerate() {
             if cell == '#' {
-                asteroid_positions.push((x, y));
+                asteroid_positions.push((x as f64, y as f64));
             }
         }
     }
     asteroid_positions
 }
 
-pub fn render(image: &str, x: usize, y: usize) {
-    let contrast: String = image
-        .chars()
-        // increase contrast so i can see the message
-        .map(|e| if e == '0' { '.' } else { '#' })
-        .collect();
-    for row in 0..y {
-        println!("{}", &contrast[x * row..x * (row + 1)]);
-    }
+fn slope(a: (f64, f64), b: (f64, f64)) -> f64 {
+    let (a_x, a_y) = a;
+    let (b_x, b_y) = b;
+    (b_y - a_y) / (b_x - a_x)
 }
 
-pub fn layers_to_image(layers: Vec<&str>) -> String {
-    layers
-        .iter()
-        .map(|e| e.chars())
-        .fold(layers[0].to_string(), |acc, e| {
-            let v: String = acc
-                .chars()
-                .zip(e)
-                .map(|(a, b)| match (a, b) {
-                    ('0', _) => '0',
-                    ('1', _) => '1',
-                    ('2', x) => x,
-                    (x, _) => panic!("got pixel val {}", x),
-                })
-                .collect();
-            v
-        })
-}
-
-pub fn image_to_layers(data: &str, x_width: usize, y_width: usize) -> Vec<&str> {
-    dbg!(data.len());
-    let mut layers: Vec<&str> = vec![];
-    let step = x_width * y_width;
-    let count_of_layers = data.len() / step;
-    for i in 0..(count_of_layers) {
-        let layer = &data[(i * step)..((i + 1) * step)];
-        layers.push(layer);
-    }
-    layers
+pub fn points_are_on_a_line(a: (f64, f64), b: (f64, f64), c: (f64, f64)) -> bool {
+    let ab = slope(a, b);
+    let ac = slope(a, c);
+    let bc = slope(b, c);
+    ab == ac && ac == bc
 }
 
 #[cfg(test)]
@@ -100,5 +71,37 @@ mod tests {
     fn first_example() {
         let positions = parse_asteroid_field(example1());
         assert_eq!(positions.len(), 10)
+    }
+
+    #[test]
+    fn line_test1() {
+        let a = (0.0, 0.0);
+        let b = (0.0, 1.0);
+        let c = (1.0, 0.0);
+        assert_eq!(points_are_on_a_line(a, b, c), false);
+    }
+
+    #[test]
+    fn line_test2() {
+        let a = (0.0, 0.0);
+        let b = (1.0, 1.0);
+        let c = (1.0, 3.0);
+        assert_eq!(points_are_on_a_line(a, b, c), false);
+    }
+
+    #[test]
+    fn line_test3() {
+        let a = (0.0, 0.0);
+        let b = (0.0, 1.0);
+        let c = (0.0, 3.0);
+        assert_eq!(points_are_on_a_line(a, b, c), true);
+    }
+
+    #[test]
+    fn line_test4() {
+        let a = (2.0, 4.0);
+        let b = (4.0, 6.0);
+        let c = (6.0, 8.0);
+        assert_eq!(points_are_on_a_line(a, b, c), true);
     }
 }
