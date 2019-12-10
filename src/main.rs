@@ -798,8 +798,6 @@ pub fn run_program_interruptable(
     }
 }
 
-"the tests fail for some reason. it had to do with fixing the relative base adjustment opcode. it made the solution pop out but now the tests break.  don't rely on the test suite when intcode comes up again"
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1118,7 +1116,7 @@ mod tests {
 
     #[test]
     fn test_try_relative_add() {
-        let input_state: Vec<i64> = vec![9, -7, 21101, 1, 1, 14, 104, 0, 99];
+        let input_state: Vec<i64> = vec![9, 9, 21101, 1, 1, 14, 104, 0, 99, -7];
         let instructions = input_state.clone();
         let mut stdin = vec![];
         let mut stdout = vec![];
@@ -1129,8 +1127,7 @@ mod tests {
     #[test]
     #[allow(non_snake_case)]
     fn test_BOOST_said_203_was_bad_check_zero_relative() {
-        // 203 means, take input and put it at `ix` where `ix` is adjusted
-        let input_state: Vec<i64> = vec![9, 0, 203, 5, 104, 3, 99];
+        let input_state: Vec<i64> = vec![9, 7, 203, 5, 104, 3, 99, 0];
         let instructions = input_state.clone();
         let mut stdin = vec![8];
         let mut stdout = vec![];
@@ -1142,7 +1139,7 @@ mod tests {
     #[allow(non_snake_case)]
     fn test_BOOST_said_203_was_bad_check_negative_relative() {
         // 203 means, take input and put it at `ix` where `ix` is adjusted
-        let input_state: Vec<i64> = vec![9, -4, 203, 9, 104, 3, 99];
+        let input_state: Vec<i64> = vec![9, 7, 203, 9, 104, 3, 99, -4];
         let instructions = input_state.clone();
         let mut stdin = vec![8];
         let mut stdout = vec![];
@@ -1154,7 +1151,53 @@ mod tests {
     #[allow(non_snake_case)]
     fn test_BOOST_said_203_was_bad_check_zero_param() {
         // 203 means, take input and put it at `ix` where `ix` is adjusted
-        let input_state: Vec<i64> = vec![9, -5, 3, 5, 104, 3, 99];
+        let input_state: Vec<i64> = vec![9, 7, 3, 5, 104, 3, 99, -5];
+        let instructions = input_state.clone();
+        let mut stdin = vec![8];
+        let mut stdout = vec![];
+        dbg!(&run_program(instructions, &mut stdin, &mut stdout)[0..10]);
+        assert_eq!(stdout[0], 8);
+    }
+
+    #[test]
+    fn test_try_relative_add_immediate() {
+        let input_state: Vec<i64> = vec![109, -7, 21101, 1, 1, 14, 104, 0, 99];
+        let instructions = input_state.clone();
+        let mut stdin = vec![];
+        let mut stdout = vec![];
+        run_program(instructions, &mut stdin, &mut stdout);
+        assert_eq!(stdout[0], 2); // probably right
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_BOOST_said_203_was_bad_check_zero_relative_immediate() {
+        // 203 means, take input and put it at `ix` where `ix` is adjusted
+        let input_state: Vec<i64> = vec![109, 0, 203, 5, 104, 3, 99];
+        let instructions = input_state.clone();
+        let mut stdin = vec![8];
+        let mut stdout = vec![];
+        run_program(instructions, &mut stdin, &mut stdout);
+        assert_eq!(stdout[0], 8);
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_BOOST_said_203_was_bad_check_negative_relative_immediate() {
+        // 203 means, take input and put it at `ix` where `ix` is adjusted
+        let input_state: Vec<i64> = vec![109, -4, 203, 9, 104, 3, 99];
+        let instructions = input_state.clone();
+        let mut stdin = vec![8];
+        let mut stdout = vec![];
+        dbg!(&run_program(instructions, &mut stdin, &mut stdout)[0..10]);
+        assert_eq!(stdout[0], 8);
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_BOOST_said_203_was_bad_check_zero_param_immediate() {
+        // 203 means, take input and put it at `ix` where `ix` is adjusted
+        let input_state: Vec<i64> = vec![109, -5, 3, 5, 104, 3, 99];
         let instructions = input_state.clone();
         let mut stdin = vec![8];
         let mut stdout = vec![];
