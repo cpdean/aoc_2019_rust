@@ -4,9 +4,10 @@ use std::fs;
 //type Result<T> = ::std::result::Result<T, dyn std::error::Error>;
 
 pub fn main() -> std::io::Result<()> {
-    let f = fs::read_to_string("input/day08.txt")?;
-    let input_state = f.trim();
-    dbg!(input_state.len());
+    let f = fs::read_to_string("input/day10.txt")?;
+    let asteroid_positions = parse_asteroid_field(&f);
+    dbg!(asteroid_positions);
+    /*
     let layers = image_to_layers(input_state, 25, 6);
     let target_layer = layers
         .iter()
@@ -25,7 +26,21 @@ pub fn main() -> std::io::Result<()> {
     dbg!(layers_to_image(layers_ex.clone()));
     render(&layers_to_image(layers_ex), 2, 2);
     render(&layers_to_image(layers), 25, 6);
+    */
     Ok(())
+}
+
+pub fn parse_asteroid_field(s: &str) -> Vec<(usize, usize)> {
+    let lines = s.trim().split("\n");
+    let mut asteroid_positions = vec![];
+    for (y, line) in lines.enumerate() {
+        for (x, cell) in line.chars().enumerate() {
+            if cell == '#' {
+                asteroid_positions.push((x, y));
+            }
+        }
+    }
+    asteroid_positions
 }
 
 pub fn render(image: &str, x: usize, y: usize) {
@@ -73,10 +88,17 @@ pub fn image_to_layers(data: &str, x_width: usize, y_width: usize) -> Vec<&str> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn example1() -> &'static str {
+        ".#..#
+.....
+#####
+....#
+...##"
+    }
 
     #[test]
-    fn it_works() {
-        let data = "0222112222120000";
-        let layers = image_to_layers(data, 2, 2);
+    fn first_example() {
+        let positions = parse_asteroid_field(example1());
+        assert_eq!(positions.len(), 10)
     }
 }
