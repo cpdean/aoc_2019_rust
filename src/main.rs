@@ -43,17 +43,63 @@ pub fn parse_asteroid_field(s: &str) -> Vec<(f64, f64)> {
     asteroid_positions
 }
 
-fn slope(a: (f64, f64), b: (f64, f64)) -> f64 {
+type Point = (f64, f64);
+
+fn slope(a: &Point, b: &Point) -> f64 {
     let (a_x, a_y) = a;
     let (b_x, b_y) = b;
     (b_y - a_y) / (b_x - a_x)
 }
 
-pub fn points_are_on_a_line(a: (f64, f64), b: (f64, f64), c: (f64, f64)) -> bool {
+fn distance(a: &Point, b: &Point) -> f64 {
+    let (a_x, a_y) = a;
+    let (b_x, b_y) = b;
+    ((b_x - a_x).exp2() + (b_y - a_y).exp2()).sqrt()
+}
+
+pub fn points_are_on_a_line(a: &Point, b: &Point, c: &Point) -> bool {
     let ab = slope(a, b);
     let ac = slope(a, c);
     let bc = slope(b, c);
     ab == ac && ac == bc
+}
+
+pub fn score_of_base(possible_base: &Point, mut asteroids: Vec<Point>) -> usize {
+    asteroids.sort_by(|a, b| {
+        let a_distance = distance(&possible_base, a);
+        let b_distance = distance(&possible_base, b);
+        a_distance.partial_cmp(&b_distance).unwrap()
+    });
+    let mut non_blocked_asteroids: Vec<_> = vec![];
+    for p in asteroids {
+        let mut p_is_blocked = false;
+        for asteroid in &non_blocked_asteroids {
+            if points_are_on_a_line(&possible_base, &p, asteroid) {
+                p_is_blocked = true;
+                break;
+            }
+        }
+        if !p_is_blocked {
+            non_blocked_asteroids.push(p);
+        }
+    }
+    non_blocked_asteroids.len()
+}
+
+pub fn find_best_station(positions: Vec<Point>) -> (Point, usize) {
+    let mut best_so_far = ((0.0, 0.0), 0);
+    for i in 0..positions.len() {
+        let possible_base = positions[i];
+        let head = &positions[0..i];
+        let tail = &positions[i + 1..];
+        let mut ordered: Vec<Point> = [head, tail].concat();
+        let base_score = score_of_base(&possible_base, ordered);
+        let (_, score) = best_so_far;
+        if score < (base_score) {
+            best_so_far = dbg!((possible_base, base_score));
+        }
+    }
+    best_so_far
 }
 
 #[cfg(test)]
@@ -70,7 +116,9 @@ mod tests {
     #[test]
     fn first_example() {
         let positions = parse_asteroid_field(example1());
-        assert_eq!(positions.len(), 10)
+        assert_eq!(positions.len(), 10);
+        let best_point = find_best_station(positions);
+        assert_eq!(best_point, ((3.0, 4.0), 8));
     }
 
     #[test]
@@ -78,7 +126,7 @@ mod tests {
         let a = (0.0, 0.0);
         let b = (0.0, 1.0);
         let c = (1.0, 0.0);
-        assert_eq!(points_are_on_a_line(a, b, c), false);
+        assert_eq!(points_are_on_a_line(&a, &b, &c), false);
     }
 
     #[test]
@@ -86,7 +134,7 @@ mod tests {
         let a = (0.0, 0.0);
         let b = (1.0, 1.0);
         let c = (1.0, 3.0);
-        assert_eq!(points_are_on_a_line(a, b, c), false);
+        assert_eq!(points_are_on_a_line(&a, &b, &c), false);
     }
 
     #[test]
@@ -94,7 +142,7 @@ mod tests {
         let a = (0.0, 0.0);
         let b = (0.0, 1.0);
         let c = (0.0, 3.0);
-        assert_eq!(points_are_on_a_line(a, b, c), true);
+        assert_eq!(points_are_on_a_line(&a, &b, &c), true);
     }
 
     #[test]
@@ -102,6 +150,6 @@ mod tests {
         let a = (2.0, 4.0);
         let b = (4.0, 6.0);
         let c = (6.0, 8.0);
-        assert_eq!(points_are_on_a_line(a, b, c), true);
+        assert_eq!(points_are_on_a_line(&a, &b, &c), true);
     }
 }
