@@ -31,7 +31,7 @@ def subtract(a, b):
 
 
 def score_of_position(position, other_points):
-    possible = {identity_vector(subtract(i, position)):i for i in other_points}
+    possible = {identity_vector(subtract(i, position)): i for i in other_points}
     return possible
 
 
@@ -41,7 +41,7 @@ def find_best_position(positions):
         possible = positions[i]
         other = positions[:i] + positions[i + 1 :]
         _s = score_of_position(possible, other)
-        print("what",(possible, len(_s)))
+        print("what", (possible, len(_s)))
         for i in _s.items():
             print(i)
         score = len(_s)
@@ -71,8 +71,9 @@ def main():
     positions = parse_positions(data)
     print(find_best_position(positions))
 
+
 def to_frac(ints):
-    return [(Fraction(x), Fraction(y)) for x,y in ints]
+    return [(Fraction(x), Fraction(y)) for x, y in ints]
 
 
 if __name__ == "__main__":
@@ -99,7 +100,7 @@ def test_please():
         (Fraction(4, 1), Fraction(2, 1)),
         (Fraction(4, 1), Fraction(3, 1)),
         (Fraction(3, 1), Fraction(4, 1)),
-        (Fraction(4, 1), Fraction(4, 1))
+        (Fraction(4, 1), Fraction(4, 1)),
     ]
     best = find_best_position(positions)
     show_scores(positions)
@@ -174,12 +175,5 @@ def test_best_long_diag_shallow():
 
 
 def test_best_long_diag_steep():
-    positions = to_frac([
-        (0, 0),
-        (2, 1),
-        (4, 2),
-        (6, 3),
-        (8, 4),
-        (4, 0),
-    ])
+    positions = to_frac([(0, 0), (2, 1), (4, 2), (6, 3), (8, 4), (4, 0),])
     assert find_best_position(positions) == ((4, 0), 5)
