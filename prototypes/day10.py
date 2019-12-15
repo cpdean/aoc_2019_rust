@@ -1,6 +1,8 @@
 from fractions import Fraction
 import pytest
 import math
+from collections import defaultdict, Counter
+import itertools
 
 
 def parse_positions(data):
@@ -41,6 +43,15 @@ def score_of_position(position, other_points):
     possible = {angle_between(position, i): i for i in other_points}
     return possible
 
+def vapor_order(position, other_points):
+    by_distance = sorted(other_points, key=lambda a: 
+        distance(position, a)
+)
+    by_angle = defaultdict(list)
+    for asteroid in by_distance:
+        by_angle[angle_between(position, asteroid)].append(asteroid)
+    return by_angle
+
 
 def find_best_position(positions):
     best_so_far = (None, 0)
@@ -73,7 +84,23 @@ def main():
     with open("input/day10.txt") as f:
         data = f.read().strip()
     positions = parse_positions(data)
-    print(find_best_position(positions))
+    (best, count) = find_best_position(positions)
+    print((best, count))
+    print(len(positions))
+    positions.remove(best)
+    print(len(positions))
+    o = vapor_order(best, positions)
+    check_order = itertools.cycle(sorted(o.keys()))
+    destroyed = 0
+    for check in check_order:
+        asteroid_list = o[check]
+        if len(asteroid_list) > 0:
+            asteroid = asteroid_list.pop(0)
+            x, y = asteroid
+            destroyed += 1
+            print((destroyed, asteroid, "answer: ", (x * 100 + y)))
+        if destroyed > 200:
+            break
 
 
 def to_frac(ints):
