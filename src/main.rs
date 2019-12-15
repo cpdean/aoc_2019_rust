@@ -1,3 +1,4 @@
+// failed day 10 solution
 use std::collections::HashMap;
 /// replace
 use std::fs;
@@ -9,26 +10,6 @@ pub fn main() -> std::io::Result<()> {
     let f = fs::read_to_string("input/day10.txt")?;
     let asteroid_positions = parse_asteroid_field(&f);
     dbg!(asteroid_positions);
-    /*
-    let layers = image_to_layers(input_state, 25, 6);
-    let target_layer = layers
-        .iter()
-        .min_by(|a, b| {
-            let a_zeros = a.chars().filter(|c| *c == '0').count();
-            let b_zeros = b.chars().filter(|c| *c == '0').count();
-            a_zeros.cmp(&b_zeros)
-        })
-        .unwrap();
-    let ones = target_layer.chars().filter(|c| *c == '1').count();
-    let twos = target_layer.chars().filter(|c| *c == '2').count();
-    let part1 = ones * twos;
-    dbg!(part1);
-    let data = "0222112222120000";
-    let layers_ex = image_to_layers(data, 2, 2);
-    dbg!(layers_to_image(layers_ex.clone()));
-    render(&layers_to_image(layers_ex), 2, 2);
-    render(&layers_to_image(layers), 25, 6);
-    */
     Ok(())
 }
 
