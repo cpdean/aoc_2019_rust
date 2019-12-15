@@ -7,7 +7,7 @@ cargo test --all
 ```
 # for running old days, until this gets backported to the workspace format
 cargo run --example day01
-cargo run --example day06
+RUST_BACKTRACE=1 cargo run --example day06
 cargo run --example day09
 ```
 
