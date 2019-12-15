@@ -1,5 +1,6 @@
 from fractions import Fraction
 import pytest
+import math
 
 
 def parse_positions(data):
@@ -23,6 +24,12 @@ def identity_vector(vec):
     x, y = vec
     return (x / d, y / d)
 
+def angle_between(a, b):
+    result = math.atan2(b[0] - a[0], a[1] - b[1]) * 180 / math.pi
+    if result < 0:
+        return 360 + result
+    return result
+
 
 def subtract(a, b):
     (a_x, a_y) = a
@@ -31,7 +38,7 @@ def subtract(a, b):
 
 
 def score_of_position(position, other_points):
-    possible = {identity_vector(subtract(i, position)): i for i in other_points}
+    possible = {angle_between(position, i): i for i in other_points}
     return possible
 
 
@@ -41,9 +48,6 @@ def find_best_position(positions):
         possible = positions[i]
         other = positions[:i] + positions[i + 1 :]
         _s = score_of_position(possible, other)
-        print("what", (possible, len(_s)))
-        for i in _s.items():
-            print(i)
         score = len(_s)
         (_, old_score) = best_so_far
         if old_score < score:
