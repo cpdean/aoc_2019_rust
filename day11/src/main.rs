@@ -10,7 +10,7 @@ pub struct IntCodeComputer {
 }
 
 impl IntCodeComputer {
-    fn new(instructions: Vec<i64>) -> IntCodeComputer {
+    pub fn new(instructions: Vec<i64>) -> IntCodeComputer {
         let mut mem = HashMap::new();
         for i in 0..instructions.len() {
             mem.insert(i, instructions[i]);
@@ -47,7 +47,6 @@ impl IntCodeComputer {
     pub fn step_forward(&mut self, stdin: &mut Vec<i64>, stdout: &mut Vec<i64>) -> InterruptState {
         use Opcode::*;
         let instruction = parse_opcode(*self.memory.get(&self.instruction_pointer).unwrap());
-        let mut interrupt = InterruptState::Running;
         match instruction {
             Add(arg1, arg2, arg3) => {
                 let (left, right, destination_pos) = (
@@ -1292,7 +1291,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![];
         let mut stdout = vec![];
-        run_program(instructions, &mut stdin, &mut stdout);
+        run_program(instructions, &mut stdin, &mut stdout).unwrap();
         assert_eq!(stdout[0], 1125899906842624); // probably right
     }
 
