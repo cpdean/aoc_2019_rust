@@ -939,7 +939,7 @@ pub fn run_program(
     let mut position = 0;
     let mut relative_base = 0;
     // lol
-    for _ in 0..100 {
+    for _ in 0..10 {
         // shoutout to polina
         program.push(0);
     }
@@ -1300,9 +1300,10 @@ mod tests {
     fn test_try_position_add() {
         let input_state: Vec<i64> = vec![9, 100, 1101, 1, 1, 7, 104, 0, 99];
         let instructions = input_state.clone();
+        let mut computer = IntCodeComputer::new(instructions.clone());
         let mut stdin = vec![];
         let mut stdout = vec![];
-        run_program(instructions, &mut stdin, &mut stdout);
+        computer.run_program_interruptable(&mut stdin, &mut stdout);
         assert_eq!(stdout[0], 2); // probably right
     }
 
