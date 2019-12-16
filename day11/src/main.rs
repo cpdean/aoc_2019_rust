@@ -1,7 +1,183 @@
-/// day 9, relative mode IntCode computer
+use std::collections::HashMap;
+/// day 11, more intcode
 use std::fs;
 
-//type Result<T> = ::std::result::Result<T, dyn std::error::Error>;
+pub struct IntCodeComputer {
+    instruction_pointer: usize,
+    memory: HashMap<usize, i64>,
+    relative_base: i64,
+    clock_counter: usize,
+}
+
+impl IntCodeComputer {
+    fn new(instructions: Vec<i64>) -> IntCodeComputer {
+        let mut mem = HashMap::new();
+        for i in 0..instructions.len() {
+            mem.insert(i, instructions[i]);
+        }
+        IntCodeComputer {
+            instruction_pointer: 0,
+            memory: mem,
+            relative_base: 0,
+            clock_counter: 0,
+        }
+    }
+
+    pub fn run_program_interruptable(
+        &mut self,
+        mut stdin: &mut Vec<i64>,
+        mut stdout: &mut Vec<i64>,
+    ) -> InterruptState {
+        loop {
+            let peek_instr = self.memory.get(&self.instruction_pointer).unwrap();
+            if *peek_instr == 99 {
+                return InterruptState::Halted;
+            } else if self.clock_counter > 10_000 {
+                panic!("infinite loop?");
+            } else {
+                let interrupt = self.step_forward(&mut stdin, &mut stdout);
+                if interrupt == InterruptState::Blocked {
+                    return interrupt;
+                }
+                self.clock_counter += 1;
+            }
+        }
+    }
+
+    pub fn step_forward(&mut self, stdin: &mut Vec<i64>, stdout: &mut Vec<i64>) -> InterruptState {
+        use Opcode::*;
+        let instruction = parse_opcode(*self.memory.get(&self.instruction_pointer).unwrap());
+        let mut interrupt = InterruptState::Running;
+        match instruction {
+            Add(arg1, arg2, arg3) => {
+                let (left, right, destination_pos) = (
+                    self.get_val(self.instruction_pointer + 1, arg1, false),
+                    self.get_val(self.instruction_pointer + 2, arg2, false),
+                    self.get_val(self.instruction_pointer + 3, arg3, true) as usize,
+                );
+                self.memory.insert(destination_pos, left + right);
+                self.instruction_pointer += 4;
+                InterruptState::Running
+            }
+            Mult(arg1, arg2, _arg3) => {
+                let (left, right, destination_pos) = (
+                    self.get_val(self.instruction_pointer + 1, arg1, false),
+                    self.get_val(self.instruction_pointer + 2, arg2, false),
+                    self.get_val(self.instruction_pointer + 3, _arg3, true) as usize,
+                );
+                self.memory.insert(destination_pos, left * right);
+                self.instruction_pointer += 4;
+                InterruptState::Running
+            }
+            TakeInput(arg1) => {
+                if stdin.len() == 0 {
+                    return InterruptState::Blocked;
+                } else {
+                    let the_data = stdin.remove(0);
+                    let address = self.get_val(self.instruction_pointer + 1, arg1, true) as usize;
+                    self.memory.insert(address, the_data);
+                    self.instruction_pointer += 2;
+                    InterruptState::Running
+                }
+            }
+            ReturnInput(return_input_mode) => {
+                //let address = program[wrap_pos(self.instruction_pointer + 1, program.len() - 1) as usize] as usize;
+                //let the_data = program[address];
+                let the_data = self.get_val(self.instruction_pointer + 1, return_input_mode, false);
+                stdout.push(the_data);
+                self.instruction_pointer += 2;
+                InterruptState::Running
+            }
+            JumpIfTrue(arg1, arg2) => {
+                let (a, b) = (
+                    self.get_val(self.instruction_pointer + 1, arg1, false),
+                    self.get_val(self.instruction_pointer + 2, arg2, false),
+                );
+                if a != 0 {
+                    self.instruction_pointer = b as usize;
+                    return InterruptState::Running;
+                } else {
+                    self.instruction_pointer += 3;
+                    return InterruptState::Running;
+                }
+            }
+            JumpIfFalse(arg1, arg2) => {
+                let (a, b) = (
+                    self.get_val(self.instruction_pointer + 1, arg1, false),
+                    self.get_val(self.instruction_pointer + 2, arg2, false),
+                );
+                if a == 0 {
+                    self.instruction_pointer = b as usize;
+                    return InterruptState::Running;
+                } else {
+                    self.instruction_pointer += 3;
+                    return InterruptState::Running;
+                }
+            }
+            LessThan(arg1, arg2, _arg3) => {
+                let (left, right, destination_pos) = (
+                    self.get_val(self.instruction_pointer + 1, arg1, false),
+                    self.get_val(self.instruction_pointer + 2, arg2, false),
+                    self.get_val(self.instruction_pointer + 3, _arg3, true) as usize,
+                );
+                if left < right {
+                    self.memory.insert(destination_pos, 1);
+                } else {
+                    self.memory.insert(destination_pos, 0);
+                }
+                self.instruction_pointer += 4;
+                InterruptState::Running
+            }
+            Equals(arg1, arg2, _arg3) => {
+                let (left, right, destination_pos) = (
+                    self.get_val(self.instruction_pointer + 1, arg1, false),
+                    self.get_val(self.instruction_pointer + 2, arg2, false),
+                    self.get_val(self.instruction_pointer + 3, _arg3, true) as usize,
+                );
+                if left == right {
+                    self.memory.insert(destination_pos, 1);
+                } else {
+                    self.memory.insert(destination_pos, 0);
+                }
+                self.instruction_pointer += 4;
+                InterruptState::Running
+            }
+            AdjustRelativeBase(a) => {
+                let base_adjustment = self.get_val(self.instruction_pointer + 1, a, false);
+                self.relative_base += base_adjustment;
+                self.instruction_pointer += 2;
+                InterruptState::Running
+            }
+            Halt => {
+                println!("got a stop");
+                InterruptState::Halted
+            }
+        }
+    }
+
+    fn get_val(&self, position: usize, _mode: ParameterMode, dont_deref: bool) -> i64 {
+        let a = position;
+        if dont_deref {
+            match _mode {
+                ParameterMode::Immediate => *self.memory.get(&a).unwrap(), // eh
+                ParameterMode::Position => *self.memory.get(&a).unwrap(),
+                ParameterMode::Relative => self.relative_base + *self.memory.get(&a).unwrap(),
+            }
+        } else {
+            match _mode {
+                ParameterMode::Immediate => *self.memory.get(&a).unwrap(),
+                ParameterMode::Position => *self
+                    .memory
+                    .get(&(*self.memory.get(&a).unwrap() as usize))
+                    .unwrap(),
+                ParameterMode::Relative => *self
+                    .memory
+                    .get(&((self.relative_base + *self.memory.get(&a).unwrap()) as usize))
+                    .unwrap(),
+            }
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum ParameterMode {
@@ -432,31 +608,31 @@ pub fn get_amplifier_signal_part1(
     let instructions = amplifier_software.clone();
     stdin.push(input_config.remove(0));
     stdin.push(0);
-    run_program(instructions, &mut stdin, &mut stdout);
+    run_program(instructions, &mut stdin, &mut stdout).unwrap();
     // run amp B
     let instructions = amplifier_software.clone();
     stdin.push(input_config.remove(0));
     assert_eq!(stdout.len(), 1);
     stdin.push(stdout.remove(0));
-    run_program(instructions, &mut stdin, &mut stdout);
+    run_program(instructions, &mut stdin, &mut stdout).unwrap();
     // run amp C
     let instructions = amplifier_software.clone();
     stdin.push(input_config.remove(0));
     assert_eq!(stdout.len(), 1);
     stdin.push(stdout.remove(0));
-    run_program(instructions, &mut stdin, &mut stdout);
+    run_program(instructions, &mut stdin, &mut stdout).unwrap();
     // run amp D
     let instructions = amplifier_software.clone();
     stdin.push(input_config.remove(0));
     assert_eq!(stdout.len(), 1);
     stdin.push(stdout.remove(0));
-    run_program(instructions, &mut stdin, &mut stdout);
+    run_program(instructions, &mut stdin, &mut stdout).unwrap();
     // run amp E
     let instructions = amplifier_software.clone();
     stdin.push(input_config.remove(0));
     assert_eq!(stdout.len(), 1);
     stdin.push(stdout.remove(0));
-    run_program(instructions, &mut stdin, &mut stdout);
+    run_program(instructions, &mut stdin, &mut stdout).unwrap();
     assert_eq!(stdout.len(), 1);
     stdout.remove(0)
 }
@@ -565,7 +741,7 @@ pub fn get_amplifier_signal_part2(
 }
 
 pub fn main() -> std::io::Result<()> {
-    let f = fs::read_to_string("input/day09.txt")?;
+    let f = fs::read_to_string("input/day11.txt")?;
     let input_state: Vec<i64> = f
         .trim()
         .split(",")
@@ -577,16 +753,22 @@ pub fn main() -> std::io::Result<()> {
             i
         })
         .collect();
-    let instructions = input_state.clone();
-    let mut stdin = vec![1];
+    let canvas: HashMap<(i32, i32), bool> = HashMap::new();
+    let mut instructions = input_state.clone();
+    let mut ip = 0;
+    let mut stdin = vec![];
     let mut stdout = vec![];
-    let _final_state = run_program(instructions, &mut stdin, &mut stdout);
-    dbg!(stdout);
-    let instructions = input_state.clone();
-    let mut stdin = vec![2];
-    let mut stdout = vec![];
-    let _final_state = run_program(instructions, &mut stdin, &mut stdout);
-    dbg!(stdout);
+    let mut _halt_state = InterruptState::Running;
+    while _halt_state != InterruptState::Halted {
+        let (int, next_ix, next_p) =
+            run_program_interruptable(instructions, ip, &mut stdin, &mut stdout);
+        _halt_state = int;
+        ip = next_ix;
+        instructions = next_p;
+        dbg!(&ip);
+        panic!("uh");
+    }
+
     Ok(())
 }
 
@@ -746,21 +928,21 @@ pub fn run_program(
     mut program: Vec<i64>,
     mut stdin: &mut Vec<i64>,
     mut stdout: &mut Vec<i64>,
-) -> Vec<i64> {
+) -> Result<Vec<i64>, String> {
     let mut counter = 0;
     let mut position = 0;
     let mut relative_base = 0;
     // lol
-    for _ in 0..10000 {
+    for _ in 0..1000 {
         // shoutout to polina
         program.push(0);
     }
     loop {
         let peek_instr = program[position as usize];
         if peek_instr == 99 {
-            return program;
-        } else if counter > 1000000 {
-            panic!("infinite loop?");
+            return Ok(program);
+        } else if counter > 100_000_000 {
+            return Err("infinite loop?".to_string());
         } else {
             let (_, i, r, s) =
                 step_forward(position, program, relative_base, &mut stdin, &mut stdout);
@@ -783,11 +965,12 @@ pub fn run_program_interruptable(
         let peek_instr = program[position as usize];
         if peek_instr == 99 {
             return (InterruptState::Halted, position, program);
-        } else if counter > 1000 {
+        } else if counter > 10_000 {
             panic!("infinite loop?");
         } else {
             let (interrupt, pos, _next_base, p) =
                 step_forward(position, program.clone(), 0, &mut stdin, &mut stdout);
+            dbg!(&(&interrupt, pos, _next_base));
             if interrupt == InterruptState::Blocked {
                 return (interrupt, pos, p);
             }
@@ -841,7 +1024,7 @@ mod tests {
     #[test]
     fn test_run() {
         let program = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
-        let next_program = run_program(program, &mut vec![0], &mut vec![0]);
+        let next_program = run_program(program, &mut vec![0], &mut vec![0]).unwrap();
         assert_eq!(
             next_program[0..12].to_vec(),
             vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
@@ -1037,7 +1220,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![7];
         let mut stdout = vec![];
-        let halt_state = run_program(instructions, &mut stdin, &mut stdout);
+        let halt_state = run_program(instructions, &mut stdin, &mut stdout).unwrap();
         assert_eq!(halt_state[3], 7);
     }
 
@@ -1143,7 +1326,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![8];
         let mut stdout = vec![];
-        dbg!(&run_program(instructions, &mut stdin, &mut stdout)[0..10]);
+        dbg!(&run_program(instructions, &mut stdin, &mut stdout).unwrap()[0..10]);
         assert_eq!(stdout[0], 8);
     }
 
@@ -1155,7 +1338,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![8];
         let mut stdout = vec![];
-        dbg!(&run_program(instructions, &mut stdin, &mut stdout)[0..10]);
+        dbg!(&run_program(instructions, &mut stdin, &mut stdout).unwrap()[0..10]);
         assert_eq!(stdout[0], 8);
     }
 
@@ -1189,7 +1372,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![8];
         let mut stdout = vec![];
-        dbg!(&run_program(instructions, &mut stdin, &mut stdout)[0..10]);
+        dbg!(&run_program(instructions, &mut stdin, &mut stdout).unwrap()[0..10]);
         assert_eq!(stdout[0], 8);
     }
 
@@ -1201,7 +1384,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![8];
         let mut stdout = vec![];
-        dbg!(&run_program(instructions, &mut stdin, &mut stdout)[0..10]);
+        dbg!(&run_program(instructions, &mut stdin, &mut stdout).unwrap()[0..10]);
         assert_eq!(stdout[0], 8);
     }
 
@@ -1211,7 +1394,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![888];
         let mut stdout = vec![];
-        let halt_state = run_program(instructions, &mut stdin, &mut stdout);
+        let halt_state = run_program(instructions, &mut stdin, &mut stdout).unwrap();
         assert_eq!(halt_state[5], 888);
     }
 }
