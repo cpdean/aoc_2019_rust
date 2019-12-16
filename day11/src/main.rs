@@ -155,21 +155,27 @@ impl IntCodeComputer {
         }
     }
 
+    fn memory_get(&self, position: &usize) -> i64 {
+        match self.memory.get(position) {
+            Some(x) => *x,
+            None => 0,
+        }
+    }
+
     fn get_val(&self, position: usize, _mode: ParameterMode, dont_deref: bool) -> i64 {
         let a = position;
         if dont_deref {
             match _mode {
-                ParameterMode::Immediate => *self.memory.get(&a).unwrap(), // eh
+                ParameterMode::Immediate => self.memory_get(&a), // eh
                 ParameterMode::Position => *self.memory.get(&a).unwrap(),
                 ParameterMode::Relative => self.relative_base + *self.memory.get(&a).unwrap(),
             }
         } else {
             match _mode {
                 ParameterMode::Immediate => *self.memory.get(&a).unwrap(),
-                ParameterMode::Position => *self
-                    .memory
-                    .get(&(*self.memory.get(&a).unwrap() as usize))
-                    .unwrap(),
+                ParameterMode::Position => {
+                    self.memory_get(&(*self.memory.get(&a).unwrap() as usize))
+                }
                 ParameterMode::Relative => *self
                     .memory
                     .get(&((self.relative_base + *self.memory.get(&a).unwrap()) as usize))
@@ -933,7 +939,7 @@ pub fn run_program(
     let mut position = 0;
     let mut relative_base = 0;
     // lol
-    for _ in 0..1000 {
+    for _ in 0..100 {
         // shoutout to polina
         program.push(0);
     }
@@ -1024,11 +1030,13 @@ mod tests {
     #[test]
     fn test_run() {
         let program = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
-        let next_program = run_program(program, &mut vec![0], &mut vec![0]).unwrap();
-        assert_eq!(
-            next_program[0..12].to_vec(),
-            vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
-        );
+        let mut computer = IntCodeComputer::new(program.clone());
+        computer.run_program_interruptable(&mut vec![0], &mut vec![0]);
+        let mut copied = vec![];
+        for i in 0..12 {
+            copied.push(*computer.memory.get(&i).unwrap());
+        }
+        assert_eq!(copied, vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]);
     }
 
     #[test]
@@ -1230,9 +1238,10 @@ mod tests {
             109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
         ];
         let instructions = input_state.clone();
+        let mut computer = IntCodeComputer::new(instructions.clone());
         let mut stdin = vec![];
         let mut stdout = vec![];
-        run_program(instructions, &mut stdin, &mut stdout);
+        computer.run_program_interruptable(&mut stdin, &mut stdout);
         // this is the quine example
         assert_eq!(stdout, input_state);
     }
