@@ -19,7 +19,7 @@ pub fn main() -> std::io::Result<()> {
     let part2_input: Vec<i32> = vec![parse_str(f)]
         .iter()
         .cycle()
-        .take(1000)
+        .take(10)
         .flat_map(|e| e.clone())
         .collect();
 
@@ -32,7 +32,7 @@ pub fn main() -> std::io::Result<()> {
         .parse()
         .unwrap();
     let fft = FFT::new(part2_input.clone());
-    for (i, e) in fft.take(5).enumerate() {
+    for (i, e) in fft.take(100).enumerate() {
         println!(
             "{}: {}",
             i,
