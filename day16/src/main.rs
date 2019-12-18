@@ -19,7 +19,7 @@ pub fn main() -> std::io::Result<()> {
     let part2_input: Vec<i32> = vec![parse_str(f)]
         .iter()
         .cycle()
-        .take(10)
+        .take(1000)
         .flat_map(|e| e.clone())
         .collect();
 
@@ -32,7 +32,7 @@ pub fn main() -> std::io::Result<()> {
         .parse()
         .unwrap();
     let fft = FFT::new(part2_input.clone());
-    for (i, e) in fft.take(100).enumerate() {
+    for (i, e) in fft.take(5).enumerate() {
         println!(
             "{}: {}",
             i,
@@ -60,6 +60,12 @@ pub fn main() -> std::io::Result<()> {
     Ok(())
 }
 
+/// Makes a sequence of numbers like this:
+///
+/// 1: [1, 0, -1, 0, 1, 0, -1, 0]
+/// 2: [0, 1, 1, 0, 0, -1, -1, 0]
+/// 3: [0, 0, 1, 1, 1, 0, 0, 0]
+/// ...
 pub fn base_pattern(ith_element: usize, len: usize) -> Vec<i32> {
     let base: Vec<i32> = vec![0, 1, 0, -1];
     let expanded: Vec<i32> = base
@@ -76,7 +82,7 @@ pub fn base_pattern(ith_element: usize, len: usize) -> Vec<i32> {
 }
 
 fn make_bases(len: usize) -> Vec<Vec<i32>> {
-    let mut bases = vec![];
+    let mut bases = Vec::with_capacity(len);
     for i in 0..len {
         bases.push(base_pattern(i + 1, len));
     }
