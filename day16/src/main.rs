@@ -121,8 +121,8 @@ impl Iterator for FFT {
             let this_digit = self
                 .current
                 .iter()
-                //.zip(&self.bases[i])
-                .zip(base_pattern(i, self.current.len()))
+                .zip(&self.bases[i])
+                //.zip(base_pattern(i, self.current.len()))
                 .map(|(left, right)| left * right)
                 .fold(0, |a, b| a + b);
             output.push(this_digit.abs() % 10);
