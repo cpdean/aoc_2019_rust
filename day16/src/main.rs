@@ -24,7 +24,7 @@ pub fn base_pattern(ith_element: i32) -> Vec<i32> {
             v
         })
         .flat_map(|e| e.clone());
-    expanded.cycle().drop(1).take(1000).cloned().collect()
+    expanded.cycle().skip(1).take(1000).cloned().collect()
 }
 
 #[cfg(test)]
@@ -34,17 +34,17 @@ mod tests {
     #[test]
     fn base1() {
         let b: Vec<i32> = base_pattern(1).iter().take(8).cloned().collect();
-        assert_eq!(b, vec![0, 1, 0, -1, 0, 1, 0, -1]);
+        assert_eq!(b, vec![1, 0, -1, 0, 1, 0, -1, 0]);
     }
 
     #[test]
     fn base2() {
         let b: Vec<i32> = base_pattern(2).iter().take(8).map(|e| e.clone()).collect();
-        assert_eq!(b, vec![0, 0, 1, 1, 0, 0, -1, -1]);
+        assert_eq!(b, vec![0, 1, 1, 0, 0, -1, -1, 0]);
     }
     #[test]
     fn base3() {
         let b: Vec<i32> = base_pattern(3).iter().take(8).map(|e| e.clone()).collect();
-        assert_eq!(b, vec![0, 0, 0, 1, 1, 1, 0, 0]);
+        assert_eq!(b, vec![0, 0, 1, 1, 1, 0, 0, 0]);
     }
 }
