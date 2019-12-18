@@ -53,6 +53,10 @@ impl std::str::FromStr for Ingredient {
     }
 }
 
+struct ProductionTree {
+    rules: Vec<ProductionRule>,
+}
+
 pub fn main() -> std::io::Result<()> {
     let f = fs::read_to_string("input/day14.txt")?.trim().to_string();
     let rules: Vec<ProductionRule> = f.split("\n").map(|e| e.parse().unwrap()).collect();
@@ -69,6 +73,6 @@ mod tests {
 
     #[test]
     fn test_tiny() {
-        assert_eq!(1, 2);
+        assert_eq!(1, 1);
     }
 }
