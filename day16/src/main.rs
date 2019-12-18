@@ -3,13 +3,23 @@ use std::fs;
 //type Result<T> = ::std::result::Result<T, dyn std::error::Error>;
 
 pub fn main() -> std::io::Result<()> {
-    let f = fs::read_to_string("input/day16.txt")?;
-    let input_state: Vec<i32> = f
+    let f = fs::read_to_string("input/day16.txt")?.trim().to_string();
+    let _parsed_input: Vec<i32> = f
+        .clone()
         .trim()
         .chars()
         .map(|c| c.to_string().parse().unwrap())
         .collect();
-    dbg!(input_state);
+    let fft = FFT::new(f);
+    println!(
+        "{}",
+        fft.skip(99)
+            .next()
+            .unwrap()
+            .chars()
+            .take(8)
+            .collect::<String>()
+    );
 
     Ok(())
 }
@@ -44,10 +54,18 @@ impl Iterator for FFT {
         let parsed: Vec<i32> = self
             .current
             .chars()
-            .map(|e| e.to_string().parse().unwrap())
+            .map(|e| {
+                let r: Result<i32, _> = e.to_string().parse();
+                match r {
+                    Ok(n) => n,
+                    Err(er) => {
+                        panic!("broke on '{}', {}", e, er);
+                    }
+                }
+            })
             .collect();
         let mut output = vec![];
-        for (i, e) in parsed.iter().enumerate() {
+        for (i, _) in parsed.iter().enumerate() {
             let this_digit = parsed
                 .iter()
                 .zip(base_pattern(i as i32 + 1))
