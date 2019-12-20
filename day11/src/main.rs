@@ -35,7 +35,7 @@ impl IntCodeComputer {
             let peek_instr = self.memory.get(&self.instruction_pointer).unwrap();
             if *peek_instr == 99 {
                 return InterruptState::Halted;
-            } else if self.clock_counter > 10_000 {
+            } else if self.clock_counter > 10_000_000 {
                 panic!("infinite loop?");
             } else {
                 let interrupt = self.step_forward(&mut stdin, &mut stdout);
@@ -748,6 +748,76 @@ pub fn get_amplifier_signal_part2(
     return stdin_a_ptr.borrow()[0];
 }
 
+fn canvas_get(c: &HashMap<(i32, i32), bool>, coord: &(i32, i32)) -> bool {
+    if c.contains_key(coord) {
+        *c.get(coord).unwrap()
+    } else {
+        false
+    }
+}
+
+fn show_canvas(c: &HashMap<(i32, i32), bool>) {
+    let (min_width, max_width) = (
+        c.keys().map(|(x, _)| x).min().unwrap(),
+        c.keys().map(|(x, _)| x).max().unwrap(),
+    );
+    let (min_height, max_height) = (
+        c.keys().map(|(_, y)| y).min().unwrap(),
+        c.keys().map(|(_, y)| y).max().unwrap(),
+    );
+    for y in *min_height..*max_height + 1 {
+        let mut line = vec![];
+        for x in *min_width..*max_width + 1 {
+            line.push(if canvas_get(c, &(x, y)) { "#" } else { "_" });
+        }
+        println!("{}", line.join(""));
+    }
+    //dbg!((min_width, max_width));
+    //dbg!((min_height, max_height));
+}
+
+#[derive(Debug)]
+enum Direction {
+    North,
+    South,
+    East,
+    West,
+}
+
+fn turn(direction: &Direction, command: &i64) -> Direction {
+    use Direction::*;
+    match command {
+        // left
+        0 => match direction {
+            North => West,
+            West => South,
+            South => East,
+            East => North,
+        },
+        // right
+        1 => match direction {
+            North => East,
+            East => South,
+            South => West,
+            West => North,
+        },
+        _ => panic!("bad turn command {}", command),
+    }
+}
+
+fn travel(coord: &(i32, i32), d: &Direction) -> (i32, i32) {
+    use Direction::*;
+    let velocity = match d {
+        North => (0, -1),
+        East => (1, 0),
+        South => (0, 1),
+        West => (-1, 0),
+    };
+    let (v_x, v_y) = velocity;
+    let (x, y) = coord;
+    (x + v_x, y + v_y)
+}
+
 pub fn main() -> std::io::Result<()> {
     let f = fs::read_to_string("input/day11.txt")?;
     let input_state: Vec<i64> = f
@@ -761,21 +831,44 @@ pub fn main() -> std::io::Result<()> {
             i
         })
         .collect();
-    let canvas: HashMap<(i32, i32), bool> = HashMap::new();
-    let mut instructions = input_state.clone();
-    let mut ip = 0;
-    let mut stdin = vec![];
+    let mut canvas: HashMap<(i32, i32), bool> = HashMap::new();
+    let instructions = input_state.clone();
+    let mut computer = IntCodeComputer::new(instructions);
+    let mut stdin = vec![0];
+    //let mut stdin = vec![1];
     let mut stdout = vec![];
-    let mut _halt_state = InterruptState::Running;
-    while _halt_state != InterruptState::Halted {
-        let (int, next_ix, next_p) =
-            run_program_interruptable(instructions, ip, &mut stdin, &mut stdout);
-        _halt_state = int;
-        ip = next_ix;
-        instructions = next_p;
-        dbg!(&ip);
-        panic!("uh");
+    let mut robot_position = (0, 0);
+    let mut robot_direction = Direction::North;
+    let mut halt_state = InterruptState::Running;
+    while halt_state != InterruptState::Halted {
+        halt_state = computer.run_program_interruptable(&mut stdin, &mut stdout);
+        while stdout.len() > 0 {
+            let paint = stdout.remove(0);
+            if paint == 1 {
+                canvas.insert(robot_position, true);
+            } else {
+                canvas.insert(robot_position, false);
+            }
+            let turn_command = stdout.remove(0);
+            robot_direction = turn(&robot_direction, &turn_command);
+            robot_position = dbg!(travel(&robot_position, &robot_direction));
+        }
+        // tell the robot the color of the square it is currently on
+        let current_color = canvas_get(&canvas, &robot_position);
+        if current_color {
+            stdin.push(1);
+        } else {
+            stdin.push(0);
+        }
     }
+    let white_count = canvas.values().filter(|&&e| e).count();
+    let black_count = canvas.values().filter(|&e| !e).count();
+    let total = canvas.len();
+    dbg!(white_count);
+    dbg!(black_count);
+    dbg!(total);
+    //dbg!(&canvas);
+    show_canvas(&canvas);
 
     Ok(())
 }
@@ -1018,19 +1111,6 @@ mod tests {
     }
 
     #[test]
-    fn step_2() {
-        let program = vec![1, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50];
-        let position = 4;
-        let (_, next_position, _next_base, next_program) =
-            step_forward(position, program, 0, &mut vec![0], &mut vec![0]);
-        assert_eq!(next_position, 8);
-        assert_eq!(
-            next_program,
-            vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
-        );
-    }
-
-    #[test]
     fn test_run() {
         let program = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
         let mut computer = IntCodeComputer::new(program.clone());
@@ -1145,7 +1225,8 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![1];
         let mut stdout = vec![];
-        let _final_state = run_program(instructions, &mut stdin, &mut stdout).unwrap();
+        let mut computer = IntCodeComputer::new(instructions.clone());
+        computer.run_program_interruptable(&mut stdin, &mut stdout);
         assert_eq!(stdin, vec![]);
         // !!!! super weird!!!!
         assert_eq!(stdout[stdout.len() - 1], 12440243);
@@ -1168,7 +1249,8 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![5];
         let mut stdout = vec![];
-        let _final_state = run_program(instructions, &mut stdin, &mut stdout).unwrap();
+        let mut computer = IntCodeComputer::new(instructions.clone());
+        computer.run_program_interruptable(&mut stdin, &mut stdout);
         assert_eq!(stdin, vec![]);
         assert_eq!(stdout, vec![15486302]);
     }
