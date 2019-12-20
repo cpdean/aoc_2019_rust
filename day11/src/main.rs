@@ -10,14 +10,17 @@ pub struct IntCodeComputer {
 }
 
 impl IntCodeComputer {
-    pub fn new(instructions: Vec<i64>) -> IntCodeComputer {
+    pub fn into_memory(instructions: Vec<i64>) -> HashMap<usize, i64> {
         let mut mem = HashMap::new();
         for i in 0..instructions.len() {
             mem.insert(i, instructions[i]);
         }
+        mem
+    }
+    pub fn new(instructions: Vec<i64>) -> IntCodeComputer {
         IntCodeComputer {
             instruction_pointer: 0,
-            memory: mem,
+            memory: IntCodeComputer::into_memory(instructions),
             relative_base: 0,
             clock_counter: 0,
         }
@@ -993,24 +996,25 @@ mod tests {
     #[test]
     fn it_works() {
         let program = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
-        let position = 0;
-        let (_, next_position, _next_base, next_program) =
-            step_forward(position, program, 0, &mut vec![0], &mut vec![0]);
-        assert_eq!(next_position, 4);
+        let mut computer = IntCodeComputer::new(program.clone());
+        computer.step_forward(&mut vec![0], &mut vec![0]);
+        assert_eq!(computer.instruction_pointer, 4);
         assert_eq!(
-            next_program,
-            vec![1, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
+            computer.memory,
+            IntCodeComputer::into_memory(vec![1, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50])
         );
     }
 
     #[test]
     fn it_works2() {
         let program = vec![1101, 100, -1, 4, 0];
-        let position = 0;
-        let (_, next_position, _next_base, next_program) =
-            step_forward(position, program, 0, &mut vec![0], &mut vec![0]);
-        assert_eq!(next_position, 4);
-        assert_eq!(next_program, vec![1101, 100, -1, 4, 99]);
+        let mut computer = IntCodeComputer::new(program.clone());
+        computer.step_forward(&mut vec![0], &mut vec![0]);
+        assert_eq!(computer.instruction_pointer, 4);
+        assert_eq!(
+            computer.memory,
+            IntCodeComputer::into_memory(vec![1101, 100, -1, 4, 99])
+        );
     }
 
     #[test]
@@ -1141,7 +1145,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![1];
         let mut stdout = vec![];
-        let _final_state = run_program(instructions, &mut stdin, &mut stdout);
+        let _final_state = run_program(instructions, &mut stdin, &mut stdout).unwrap();
         assert_eq!(stdin, vec![]);
         // !!!! super weird!!!!
         assert_eq!(stdout[stdout.len() - 1], 12440243);
@@ -1164,7 +1168,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![5];
         let mut stdout = vec![];
-        let _final_state = run_program(instructions, &mut stdin, &mut stdout);
+        let _final_state = run_program(instructions, &mut stdin, &mut stdout).unwrap();
         assert_eq!(stdin, vec![]);
         assert_eq!(stdout, vec![15486302]);
     }
@@ -1251,7 +1255,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![];
         let mut stdout = vec![];
-        run_program(instructions, &mut stdin, &mut stdout);
+        run_program(instructions, &mut stdin, &mut stdout).unwrap();
         assert_eq!(stdout[0], 1219070632396864); // probably right
     }
 
@@ -1261,7 +1265,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![];
         let mut stdout = vec![];
-        run_program(instructions, &mut stdin, &mut stdout);
+        run_program(instructions, &mut stdin, &mut stdout).unwrap();
         assert_eq!(stdout[0], 99);
     }
 
@@ -1271,7 +1275,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![];
         let mut stdout = vec![];
-        run_program(instructions, &mut stdin, &mut stdout);
+        run_program(instructions, &mut stdin, &mut stdout).unwrap();
         assert_eq!(stdout[0], 99);
     }
 
@@ -1281,7 +1285,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![];
         let mut stdout = vec![];
-        run_program(instructions, &mut stdin, &mut stdout);
+        run_program(instructions, &mut stdin, &mut stdout).unwrap();
         assert_eq!(stdout[0], 2);
     }
 
@@ -1312,7 +1316,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![];
         let mut stdout = vec![];
-        run_program(instructions, &mut stdin, &mut stdout);
+        run_program(instructions, &mut stdin, &mut stdout).unwrap();
         assert_eq!(stdout[0], 2); // probably right
     }
 
@@ -1323,7 +1327,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![8];
         let mut stdout = vec![];
-        run_program(instructions, &mut stdin, &mut stdout);
+        run_program(instructions, &mut stdin, &mut stdout).unwrap();
         assert_eq!(stdout[0], 8);
     }
 
@@ -1357,7 +1361,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![];
         let mut stdout = vec![];
-        run_program(instructions, &mut stdin, &mut stdout);
+        run_program(instructions, &mut stdin, &mut stdout).unwrap();
         assert_eq!(stdout[0], 2); // probably right
     }
 
@@ -1369,7 +1373,7 @@ mod tests {
         let instructions = input_state.clone();
         let mut stdin = vec![8];
         let mut stdout = vec![];
-        run_program(instructions, &mut stdin, &mut stdout);
+        run_program(instructions, &mut stdin, &mut stdout).unwrap();
         assert_eq!(stdout[0], 8);
     }
 
