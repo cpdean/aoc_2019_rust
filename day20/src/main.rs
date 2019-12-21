@@ -305,6 +305,6 @@ mod tests {
         let p = parse_donut_map(tiny_map_raw(), 5);
         let edges = edge_map(&p);
         let d = min_distance(edges, (9, 2), (13, 16));
-        assert_eq!(d, 26);
+        assert_eq!(d.len(), 23);
     }
 }
