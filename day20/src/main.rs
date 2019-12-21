@@ -141,7 +141,7 @@ pub fn parse_donut_map(s: String, donut_thickness: usize) -> HashMap<(usize, usi
     // scan inner bottom
     let inner_bottom_edge = grid.len() - 2 - donut_thickness;
     for x in (2 + donut_thickness)..((grid[0].len()) - 2 - donut_thickness) {
-        if let Some(&CellType::Path) = dbg!(field.get(&(x, inner_bottom_edge))) {
+        if let Some(&CellType::Path) = field.get(&(x, inner_bottom_edge)) {
             let label = portal_label(&grid, x, inner_bottom_edge, Dir::Up);
             field.insert((x, inner_bottom_edge), CellType::Portal(label));
         }
@@ -150,7 +150,7 @@ pub fn parse_donut_map(s: String, donut_thickness: usize) -> HashMap<(usize, usi
     field
 }
 
-fn edge_map(
+pub fn edge_map(
     field: &HashMap<(usize, usize), CellType>,
 ) -> HashMap<(usize, usize), HashSet<(usize, usize)>> {
     let mut paths = HashMap::new();
@@ -238,5 +238,16 @@ FG..#########.....#
         assert_eq!(p.get(&(13, 11)), None);
         // inner corner should have something
         assert_eq!(p.get(&(14, 12)), Some(&CellType::Wall));
+    }
+
+    /// path cells adjacent to each other should have edges
+    #[test]
+    fn edge_map_finds_basic_connections() {
+        let p = parse_donut_map(tiny_map_raw(), 5);
+        let edges = edge_map(&p);
+        let tee_intersection = edges.get(&(9, 3)).unwrap();
+        assert_eq!(tee_intersection.len(), 3);
+        let hallway = edges.get(&(9, 4)).unwrap();
+        assert_eq!(hallway.len(), 2);
     }
 }
