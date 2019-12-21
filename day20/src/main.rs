@@ -2,11 +2,11 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 
 pub fn main() -> std::io::Result<()> {
-    let _f = fs::read_to_string("input/day20.txt")?.trim().to_string();
-
-    let p = parse_donut_map(tiny_map_raw(), 5);
+    let mut f = fs::read_to_string("input/day20.txt")?.to_string();
+    f = f[..f.len() - 1].to_string();
+    let p = parse_donut_map(f, 35);
     let edges = edge_map(&p);
-    let d = min_distance(edges, (9, 2), (13, 16));
+    let d = min_distance(edges, coord_of(&p, ('A', 'A')), coord_of(&p, ('Z', 'Z')));
     dbg!(&d);
     dbg!(&d.len());
     Ok(())
@@ -62,7 +62,6 @@ pub fn parse_donut_map(s: String, donut_thickness: usize) -> HashMap<(usize, usi
     // all donut inputs appear to have a 2 character margin around the edge
     // also, the width of a section appears to be consistent all around
     let grid: Vec<Vec<char>> = s.split("\n").map(|line| line.chars().collect()).collect();
-
     let mut field = HashMap::new();
     for y in 2..(grid.len()) - 2 {
         for x in 2..(grid[0].len()) - 2 {
@@ -204,7 +203,7 @@ pub fn min_distance(
     visited.insert(source);
     while queue.len() > 0 {
         c += 1;
-        if c > 100 {
+        if c > 10000 {
             panic!("infinite loop?");
         }
         let (current, path_so_far) = queue.remove(0);
@@ -223,6 +222,17 @@ pub fn min_distance(
         }
     }
     panic!("never got to target")
+}
+
+pub fn coord_of(field: &HashMap<(usize, usize), CellType>, label: (char, char)) -> (usize, usize) {
+    for (coord, cell_type) in field.iter() {
+        if let CellType::Portal(other_label) = cell_type {
+            if other_label == &label {
+                return *coord;
+            }
+        }
+    }
+    panic!("not found");
 }
 
 pub fn tiny_map_raw() -> String {
@@ -306,5 +316,14 @@ mod tests {
         let edges = edge_map(&p);
         let d = min_distance(edges, (9, 2), (13, 16));
         assert_eq!(d.len(), 23);
+    }
+
+    #[test]
+    fn test_label_lookup() {
+        let p = parse_donut_map(tiny_map_raw(), 5);
+        let a = coord_of(&p, ('A', 'A'));
+        let z = coord_of(&p, ('Z', 'Z'));
+        assert_eq!(a, (9, 2));
+        assert_eq!(z, (13, 16));
     }
 }
