@@ -3,8 +3,12 @@ use std::fs;
 
 pub fn main() -> std::io::Result<()> {
     let _f = fs::read_to_string("input/day20.txt")?.trim().to_string();
-    dbg!("goat");
 
+    let p = parse_donut_map(tiny_map_raw(), 5);
+    let edges = edge_map(&p);
+    let d = min_distance(edges, (9, 2), (13, 16));
+    dbg!(&d);
+    dbg!(&d.len());
     Ok(())
 }
 
@@ -171,17 +175,58 @@ pub fn edge_map(
                 edges.insert(n);
             }
         }
+        if let Some(CellType::Portal(label)) = paths.get(&(*x, *y)) {
+            for (coord, cell_type) in paths.iter() {
+                if **coord == (*x, *y) {
+                    continue;
+                }
+                if let CellType::Portal(other_label) = cell_type {
+                    if other_label == label {
+                        edges.insert(**coord);
+                    }
+                }
+            }
+        }
         adjacency.insert((*x, *y), edges);
     }
     adjacency
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub fn min_distance(
+    edges: HashMap<(usize, usize), HashSet<(usize, usize)>>,
+    source: (usize, usize),
+    target: (usize, usize),
+) -> Vec<(usize, usize)> {
+    let mut c = 0;
+    let mut visited = HashSet::new();
+    let mut queue = vec![];
+    queue.push((source, vec![]));
+    visited.insert(source);
+    while queue.len() > 0 {
+        c += 1;
+        if c > 100 {
+            panic!("infinite loop?");
+        }
+        let (current, path_so_far) = queue.remove(0);
+        if current == target {
+            return path_so_far;
+        }
+        for neighbor in edges.get(&current).unwrap() {
+            if visited.contains(neighbor) {
+                continue;
+            } else {
+                let mut this_branch = path_so_far.clone();
+                this_branch.push(*neighbor);
+                queue.push((*neighbor, this_branch));
+                visited.insert(*neighbor);
+            }
+        }
+    }
+    panic!("never got to target")
+}
 
-    fn tiny_map_raw() -> String {
-        "         A           
+pub fn tiny_map_raw() -> String {
+    "         A           
          A           
   #######.#########  
   #######.........#  
@@ -200,8 +245,12 @@ FG..#########.....#
   ###########.#####  
              Z       
              Z       "
-            .to_string()
-    }
+        .to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
 
     #[test]
     fn test_parse_tiny_portal_labels() {
@@ -249,5 +298,13 @@ FG..#########.....#
         assert_eq!(tee_intersection.len(), 3);
         let hallway = edges.get(&(9, 4)).unwrap();
         assert_eq!(hallway.len(), 2);
+    }
+
+    #[test]
+    fn test_min_distance() {
+        let p = parse_donut_map(tiny_map_raw(), 5);
+        let edges = edge_map(&p);
+        let d = min_distance(edges, (9, 2), (13, 16));
+        assert_eq!(d, 26);
     }
 }
