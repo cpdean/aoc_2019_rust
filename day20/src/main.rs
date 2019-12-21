@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 
 pub fn main() -> std::io::Result<()> {
@@ -148,6 +148,32 @@ pub fn parse_donut_map(s: String, donut_thickness: usize) -> HashMap<(usize, usi
     }
 
     field
+}
+
+fn edge_map(
+    field: &HashMap<(usize, usize), CellType>,
+) -> HashMap<(usize, usize), HashSet<(usize, usize)>> {
+    let mut paths = HashMap::new();
+    for (k, v) in field {
+        match v {
+            CellType::Path | CellType::Portal(_) => paths.insert(k, v),
+            CellType::Wall => continue,
+        };
+    }
+
+    let mut adjacency = HashMap::new();
+    for ((x, y), _) in &paths {
+        let mut edges = HashSet::new();
+        let neighbors: Vec<(usize, usize)> =
+            vec![(x + 1, *y), (x - 1, *y), (*x, y + 1), (*x, y - 1)];
+        for n in neighbors {
+            if let Some(_) = paths.get(&n) {
+                edges.insert(n);
+            }
+        }
+        adjacency.insert((*x, *y), edges);
+    }
+    adjacency
 }
 
 #[cfg(test)]
