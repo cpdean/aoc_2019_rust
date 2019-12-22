@@ -7,9 +7,8 @@ pub fn main() -> std::io::Result<()> {
     for step in 1..=1001 {
         bodies = apply_gravity(&bodies);
         bodies = apply_velocity(bodies);
-        let pot = potential_energy(&bodies);
-        let kin = kinetic_energy(&bodies);
-        dbg!((step, pot + kin));
+        let e = energy(&bodies);
+        dbg!((step, e));
     }
 
     Ok(())
@@ -103,19 +102,14 @@ pub fn apply_velocity(mut bodies: Vec<Body>) -> Vec<Body> {
     bodies
 }
 
-pub fn potential_energy(bodies: &Vec<Body>) -> i32 {
+pub fn energy(bodies: &Vec<Body>) -> i32 {
     bodies
         .iter()
-        .flat_map(|b| vec![b.pos.x, b.pos.y, b.pos.z])
-        .map(|e| e.abs())
-        .fold(0, |a, b| a + b)
-}
-
-pub fn kinetic_energy(bodies: &Vec<Body>) -> i32 {
-    bodies
-        .iter()
-        .flat_map(|b| vec![b.vel.x, b.vel.y, b.vel.z])
-        .map(|e| e.abs())
+        .map(|b| {
+            let potential = b.pos.x.abs() + b.pos.y.abs() + b.pos.z.abs();
+            let kinetic = b.vel.x.abs() + b.vel.y.abs() + b.vel.z.abs();
+            potential * kinetic
+        })
         .fold(0, |a, b| a + b)
 }
 
@@ -234,6 +228,17 @@ mod tests {
             if b.pos == (Point { x: 2, y: 0, z: 4 }) {
                 assert_eq!(b.vel, (Point { x: 1, y: -1, z: -1 }));
             }
+        }
+    }
+    #[test]
+    fn test_tiny_energy_step10() {
+        let mut bodies = tiny_example();
+        for b in &bodies {
+            assert_eq!(b.vel, Point::new());
+        }
+        for _ in 0..10 {
+            bodies = apply_gravity(&bodies);
+            bodies = apply_velocity(bodies);
         }
     }
 }
