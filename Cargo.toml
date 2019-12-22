@@ -2,6 +2,7 @@
 members = [
     "old_days",
     "day11",
+    "day12",
     "day16",
     "day14",
     "day20"
