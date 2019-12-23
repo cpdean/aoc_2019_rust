@@ -16,6 +16,7 @@ pub fn main() -> std::io::Result<()> {
 
 fn parse_bodies(s: String) -> Vec<Body> {
     let mut bodies = vec![];
+    let mut name = 'a';
     for body in s.split("\n") {
         let coord_hunks: Vec<&str> = body.split(", ").collect();
         let x_hunk = coord_hunks[0];
@@ -38,9 +39,11 @@ fn parse_bodies(s: String) -> Vec<Body> {
             z: z.unwrap(),
         };
         bodies.push(Body {
+            name: name.clone(),
             pos: b,
             vel: Point::new(),
         });
+        name = (name as u8 + 1) as char;
     }
     bodies
 }
@@ -144,6 +147,7 @@ impl Point {
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub struct Body {
+    name: char,
     pos: Point,
     vel: Point,
 }
@@ -156,10 +160,12 @@ mod tests {
     fn tiny_example() -> Vec<Body> {
         vec![
             Body {
+                name: 'a',
                 pos: Point { x: -1, y: 0, z: 2 },
                 vel: Point::new(),
             },
             Body {
+                name: 'b',
                 pos: Point {
                     x: 2,
                     y: -10,
@@ -168,10 +174,12 @@ mod tests {
                 vel: Point::new(),
             },
             Body {
+                name: 'c',
                 pos: Point { x: 4, y: -8, z: 8 },
                 vel: Point::new(),
             },
             Body {
+                name: 'd',
                 pos: Point { x: 3, y: 5, z: -1 },
                 vel: Point::new(),
             },
