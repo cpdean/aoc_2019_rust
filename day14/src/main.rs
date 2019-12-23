@@ -53,8 +53,18 @@ impl std::str::FromStr for Ingredient {
     }
 }
 
-struct ProductionTree {
-    rules: Vec<ProductionRule>,
+fn how_many_fuel(number_of_ore: i32, target: Ingredient, all_rules: &Vec<ProductionRule>) -> i32 {
+    let Ingredient {
+        quantity,
+        identifier,
+    } = target;
+    let target_rule = all_rules
+        .iter()
+        .filter(|r| r.output.identifier == identifier)
+        .next()
+        .unwrap();
+
+    -1
 }
 
 pub fn main() -> std::io::Result<()> {
