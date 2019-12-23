@@ -392,13 +392,14 @@ fn travel(coord: &(i32, i32), d: &Direction) -> (i32, i32) {
     (x + v_x, y + v_y)
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 enum CellType {
     Empty,
     Wall,
     Block,
     Paddle,
     Ball,
+    TheScore(i64),
 }
 
 fn get_raw_screen(stdout: &mut Vec<i64>) -> Vec<((i64, i64), CellType)> {
@@ -411,7 +412,7 @@ fn get_raw_screen(stdout: &mut Vec<i64>) -> Vec<((i64, i64), CellType)> {
             2 => CellType::Block,
             3 => CellType::Paddle,
             4 => CellType::Ball,
-            x => panic!("not valid cell type: {}", x),
+            x => CellType::TheScore(x),
         };
         out.push(((x, y), cell_type));
     }
@@ -435,11 +436,15 @@ pub fn main() -> std::io::Result<()> {
     let mut frame = 0;
     let instructions = input_state.clone();
     let mut computer = IntCodeComputer::new(instructions);
-    let mut stdin = vec![];
+    // now with quarters
+    computer.memory.insert(0, 2);
+    let mut stdin = vec![0];
     let mut stdout = vec![];
     let mut halt_state = InterruptState::Running;
     while halt_state != InterruptState::Halted {
         halt_state = computer.run_program_interruptable(&mut stdin, &mut stdout);
+        //dbg!(&halt_state);
+        /*
         if frame == 0 {
             let part1 = get_raw_screen(&mut stdout)
                 .iter()
@@ -447,7 +452,47 @@ pub fn main() -> std::io::Result<()> {
                 .count();
             dbg!(part1);
         }
-        break;
+        */
+        let the_screen = get_raw_screen(&mut stdout);
+        let mut b: Vec<((i64, i64), CellType)> = the_screen
+            .iter()
+            .filter(|((x, y), cell_type)| cell_type == &CellType::Ball)
+            .map(|e| e.clone())
+            .collect();
+
+        if dbg!(&b).len() > 0 {
+            let ((ball_x, ball_y), _) = b.remove(0);
+
+            let mut p: Vec<((i64, i64), CellType)> = the_screen
+                .iter()
+                .filter(|((x, y), cell_type)| cell_type == &CellType::Paddle)
+                .map(|e| e.clone())
+                .collect();
+            let ((paddle_x, paddle_y), _) = p.remove(0);
+
+            if ball_x < paddle_x {
+                stdin.push(-1);
+            } else if ball_x > paddle_x {
+                stdin.push(1);
+            } else {
+                stdin.push(0);
+            }
+        }
+
+        let s: Vec<((i64, i64), CellType)> = the_screen
+            .iter()
+            .filter(|((x, y), cell_type)| match cell_type {
+                CellType::TheScore(x) => true,
+                anything_else => false,
+            })
+            .map(|e| e.clone())
+            .collect();
+        dbg!(s);
+        if dbg!(frame) > 300 {
+            dbg!(the_screen);
+        }
+
+        frame += 1;
     }
     //dbg!(&canvas);
     //show_canvas(&canvas);
